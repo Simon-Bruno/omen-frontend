@@ -13,6 +13,7 @@ import { FC, memo, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import { OAuthButton } from "@/components/assistant-ui/oauth-button";
 import { cn } from "@/lib/utils";
 
 const MarkdownTextImpl = () => {
@@ -64,6 +65,18 @@ const useCopyToClipboard = ({
   return { isCopied, copyToClipboard };
 };
 
+// Custom component to handle OAuth URLs
+const OAuthHandler: FC<{ children: React.ReactNode }> = ({ children }) => {
+  const text = children?.toString() || '';
+  const oauthMatch = text.match(/__OAUTH_URL__:(.+)/);
+  
+  if (oauthMatch) {
+    return <OAuthButton oauthUrl={oauthMatch[1]} />;
+  }
+  
+  return <>{children}</>;
+};
+
 const defaultComponents = memoizeMarkdownComponents({
   h1: ({ className, ...props }) => (
     <h1 className={cn("mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0", className)} {...props} />
@@ -84,7 +97,9 @@ const defaultComponents = memoizeMarkdownComponents({
     <h6 className={cn("my-4 font-semibold first:mt-0 last:mb-0", className)} {...props} />
   ),
   p: ({ className, ...props }) => (
-    <p className={cn("mb-5 mt-5 leading-7 first:mt-0 last:mb-0", className)} {...props} />
+    <OAuthHandler>
+      <p className={cn("mb-5 mt-5 leading-7 first:mt-0 last:mb-0", className)} {...props} />
+    </OAuthHandler>
   ),
   a: ({ className, ...props }) => (
     <a className={cn("text-primary font-medium underline underline-offset-4", className)} {...props} />
