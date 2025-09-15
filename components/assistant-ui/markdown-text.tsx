@@ -15,6 +15,8 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { OAuthButton } from "@/components/assistant-ui/oauth-button";
 import { cn } from "@/lib/utils";
+import { useAssistantRuntime } from "@assistant-ui/react";
+import { useCurrentState } from "@/app/AgentRuntimeProvider";
 
 const MarkdownTextImpl = () => {
   return (
@@ -69,13 +71,15 @@ const useCopyToClipboard = ({
 const OAuthHandler: FC<{ children: React.ReactNode }> = ({ children }) => {
   const text = children?.toString() || '';
   const oauthMatch = text.match(/__OAUTH_URL__:(.+)/);
+  const shopDomainMatch = text.match(/__SHOP_DOMAIN__:(.+)/);
   
   if (oauthMatch) {
-    return <OAuthButton oauthUrl={oauthMatch[1]} />;
+    return <OAuthButton oauthUrl={oauthMatch[1]} shopDomain={shopDomainMatch?.[1]} />;
   }
   
   return <>{children}</>;
 };
+
 
 const defaultComponents = memoizeMarkdownComponents({
   h1: ({ className, ...props }) => (
@@ -96,14 +100,45 @@ const defaultComponents = memoizeMarkdownComponents({
   h6: ({ className, ...props }) => (
     <h6 className={cn("my-4 font-semibold first:mt-0 last:mb-0", className)} {...props} />
   ),
-  p: ({ className, ...props }) => (
-    <OAuthHandler>
-      <p className={cn("mb-5 mt-5 leading-7 first:mt-0 last:mb-0", className)} {...props} />
-    </OAuthHandler>
-  ),
-  a: ({ className, ...props }) => (
-    <a className={cn("text-primary font-medium underline underline-offset-4", className)} {...props} />
-  ),
+  p: ({ className, ...props }) => {
+    const text = props.children?.toString() || '';
+    const oauthMatch = text.match(/__OAUTH_URL__:(.+)/);
+    const shopDomainMatch = text.match(/__SHOP_DOMAIN__:(.+)/);
+    
+    if (oauthMatch) {
+      return (
+        <p className={cn("mb-5 mt-5 leading-7 first:mt-0 last:mb-0", className)}>
+          <OAuthButton oauthUrl={oauthMatch[1]} shopDomain={shopDomainMatch?.[1]} />
+        </p>
+      );
+    }
+    
+    return <p className={cn("mb-5 mt-5 leading-7 first:mt-0 last:mb-0", className)} {...props} />;
+  },
+  a: ({ className, href, ...props }) => {
+    console.log("Link component rendered with href:", href);
+    // Check if this is an OAuth URL
+    if (href && (href.includes('admin.shopify.com/oauth') || href.includes('shopify.com/oauth') || href.includes('/agents/shopify/authorize'))) {
+      console.log("OAuth URL detected, rendering OAuthButton");
+      
+      // Get shop domain directly from state
+      const currentState = useCurrentState();
+      const shopDomain = currentState.data?.shopDomain;
+      console.log("Current state:", currentState);
+      console.log("Using shopDomain from state:", shopDomain);
+      
+      return (
+        <OAuthButton 
+          oauthUrl={href} 
+          shopDomain={shopDomain}
+          className="inline-block"
+        />
+      );
+    }
+    return (
+      <a className={cn("text-primary font-medium underline underline-offset-4", className)} href={href} {...props} />
+    );
+  },
   blockquote: ({ className, ...props }) => (
     <blockquote className={cn("border-l-2 pl-6 italic", className)} {...props} />
   ),

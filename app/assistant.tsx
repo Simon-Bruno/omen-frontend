@@ -1,13 +1,14 @@
 "use client";
 
 import { Thread } from "@/components/assistant-ui/thread";
+import { AgentRuntimeProvider } from "./AgentRuntimeProvider";
 
 export const Assistant = () => {
   return (
-    <div className="flex h-dvh w-full justify-center bg-background">
-      <div className="w-full max-w-3xl overflow-hidden">
+    <AgentRuntimeProvider>
+      <div className="h-full w-full bg-background">
         <Thread />
       </div>
-    </div>
+    </AgentRuntimeProvider>
   );
 };
