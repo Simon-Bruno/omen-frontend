@@ -18,6 +18,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   Square,
+  AlertCircleIcon,
+  LoaderIcon,
 } from "lucide-react";
 
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
@@ -26,9 +28,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MarkdownText } from "./markdown-text";
 import { ToolFallback } from "./tool-fallback";
-import { OAuthButton } from "./oauth-button";
+import { useChatContext } from "@/components/chat/ChatProvider";
 
 export const Thread: FC = () => {
+  const { error, isLoading, clearError } = useChatContext();
+
   return (
     <ThreadPrimitive.Root
       // aui-thread-root
@@ -38,6 +42,30 @@ export const Thread: FC = () => {
         ["--thread-padding-x" as string]: "1rem",
       }}
     >
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircleIcon className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+              <div className="mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearError}
+                  className="text-red-700 border-red-300 hover:bg-red-100"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* aui-thread-viewport */}
       <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-6 overflow-y-scroll">
         <ThreadWelcome />
@@ -49,6 +77,18 @@ export const Thread: FC = () => {
             AssistantMessage,
           }}
         />
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto flex w-full max-w-[var(--thread-max-width)] items-center gap-2 px-[var(--thread-padding-x)] py-4"
+          >
+            <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Agent is thinking...</span>
+          </motion.div>
+        )}
 
         <ThreadPrimitive.If empty={false}>
           {/* aui-thread-viewport-spacer */}
@@ -157,6 +197,8 @@ const ThreadWelcomeSuggestions: FC = () => {
 };
 
 const Composer: FC = () => {
+  const { isLoading } = useChatContext();
+
   return (
     // aui-composer-wrapper
     <div className="bg-background relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-4 px-[var(--thread-padding-x)] pb-4 md:pb-6">
@@ -168,12 +210,14 @@ const Composer: FC = () => {
       <ComposerPrimitive.Root className="focus-within::ring-offset-2 relative flex w-full flex-col rounded-2xl focus-within:ring-2 focus-within:ring-black dark:focus-within:ring-white">
         {/* aui-composer-input */}
         <ComposerPrimitive.Input
-          placeholder="Send a message..."
-          className={
-            "bg-muted border-border dark:border-muted-foreground/15 focus:outline-primary placeholder:text-muted-foreground max-h-[calc(50dvh)] min-h-16 w-full resize-none rounded-t-2xl border-x border-t px-4 pt-2 pb-3 text-base outline-none"
-          }
+          placeholder={isLoading ? "Agent is thinking..." : "Send a message..."}
+          disabled={isLoading}
+          className={cn(
+            "bg-muted border-border dark:border-muted-foreground/15 focus:outline-primary placeholder:text-muted-foreground max-h-[calc(50dvh)] min-h-16 w-full resize-none rounded-t-2xl border-x border-t px-4 pt-2 pb-3 text-base outline-none",
+            isLoading && "opacity-50 cursor-not-allowed"
+          )}
           rows={1}
-          autoFocus
+          autoFocus={!isLoading}
           aria-label="Message input"
         />
         <ComposerAction />
@@ -183,14 +227,20 @@ const Composer: FC = () => {
 };
 
 const ComposerAction: FC = () => {
+  const { isLoading } = useChatContext();
+
   return (
     // aui-composer-action-wrapper
     <div className="bg-muted border-border dark:border-muted-foreground/15 relative flex items-center justify-between rounded-b-2xl border-x border-b p-2">
       <TooltipIconButton
         tooltip="Attach file"
         variant="ghost"
+        disabled={isLoading}
         // aui-composer-attachment-button
-        className="hover:bg-foreground/15 dark:hover:bg-background/50 scale-115 p-3.5"
+        className={cn(
+          "hover:bg-foreground/15 dark:hover:bg-background/50 scale-115 p-3.5",
+          isLoading && "opacity-50 cursor-not-allowed"
+        )}
         onClick={() => {
           console.log("Attachment clicked - not implemented");
         }}
@@ -203,8 +253,12 @@ const ComposerAction: FC = () => {
           <Button
             type="submit"
             variant="default"
+            disabled={isLoading}
             // aui-composer-send
-            className="dark:border-muted-foreground/90 border-muted-foreground/60 hover:bg-primary/75 size-8 rounded-full border"
+            className={cn(
+              "dark:border-muted-foreground/90 border-muted-foreground/60 hover:bg-primary/75 size-8 rounded-full border",
+              isLoading && "opacity-50 cursor-not-allowed"
+            )}
             aria-label="Send message"
           >
             {/* aui-composer-send-icon */}
