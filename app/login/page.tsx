@@ -36,7 +36,7 @@ export default function LoginPage() {
               <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-md">
                 <CheckCircle className="h-5 w-5" />
                 <span className="text-sm font-medium">
-                  Registration successful! Your Shopify store "{shop}" has been connected.
+                  Registration successful! Your Shopify store &quot;{shop}&quot; has been connected.
                 </span>
               </div>
             )}
@@ -62,7 +62,7 @@ export default function LoginPage() {
               </Button>
               
               <div className="text-center text-sm text-gray-600">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <a href="/register" className="text-blue-600 hover:text-blue-500">
                   Register here
                 </a>

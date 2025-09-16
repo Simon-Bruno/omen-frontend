@@ -61,6 +61,7 @@ export interface UseChatReturn {
   clearError: () => void;
   refreshMessages: () => Promise<void>;
   closeSession: () => Promise<void>;
+  createNewSession: () => Promise<void>;
 }
 
 // API Configuration

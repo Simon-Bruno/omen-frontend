@@ -22,10 +22,24 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
 
   // Initialize chat session
   const initializeSession = useCallback(async () => {
-    if (!isAuthenticated || !user || !projectId || initializingRef.current) {
+    console.log('initializeSession called:', {
+      isAuthenticated,
+      user: !!user,
+      projectId,
+      initializingRef: initializingRef.current
+    });
+
+    if (!isAuthenticated || !user || !projectId) {
+      console.log('initializeSession: Missing dependencies, returning early');
       return;
     }
 
+    if (initializingRef.current) {
+      console.log('initializeSession: Already initializing, returning early');
+      return;
+    }
+
+    console.log('initializeSession: Starting initialization...');
     initializingRef.current = true;
     setIsLoading(true);
     setError(null);
@@ -38,6 +52,7 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
         // Load existing session
         setSessionId(activeSession.sessionId);
         const { messages: existingMessages } = await chatApi.getMessages(activeSession.sessionId);
+        console.log('Loaded existing messages from API:', existingMessages);
         setMessages(existingMessages);
       } else {
         // Create new session
@@ -50,6 +65,7 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
       setError(errorMessage);
       console.error('Failed to initialize chat session:', err);
     } finally {
+      console.log('initializeSession: Setting isLoading to false');
       setIsLoading(false);
       initializingRef.current = false;
     }
@@ -130,6 +146,40 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
     }
   }, [sessionId]);
 
+  // Create new session
+  const createNewSession = useCallback(async () => {
+    if (!projectId) {
+      setError('No project ID available');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Close existing session if there is one
+      if (sessionId) {
+        await chatApi.closeSession(sessionId);
+      }
+
+      // Create new session
+      const { sessionId: newSessionId } = await chatApi.createOrGetSession(projectId);
+      setSessionId(newSessionId);
+      setMessages([]);
+      
+      // Fetch initial messages from the new session
+      const { messages: initialMessages } = await chatApi.getMessages(newSessionId);
+      setMessages(initialMessages);
+      console.log('Created new session:', newSessionId);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create new session';
+      setError(errorMessage);
+      console.error('Failed to create new session:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [projectId, sessionId]);
+
   // Clear error
   const clearError = useCallback(() => {
     setError(null);
@@ -137,10 +187,21 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
 
   // Initialize session when component mounts or dependencies change
   useEffect(() => {
-    if (autoInitialize) {
+    console.log('useChat useEffect triggered:', {
+      autoInitialize,
+      isAuthenticated,
+      user: !!user,
+      projectId,
+      initializingRef: initializingRef.current,
+      isLoading
+    });
+    
+    if (autoInitialize && !initializingRef.current) {
+      console.log('Calling initializeSession...');
       initializeSession();
     }
-  }, [initializeSession, autoInitialize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user, projectId, autoInitialize]);
 
   return {
     messages,
@@ -151,5 +212,6 @@ export const useChat = (options: UseChatOptions): UseChatReturn => {
     clearError,
     refreshMessages,
     closeSession,
+    createNewSession,
   };
 };

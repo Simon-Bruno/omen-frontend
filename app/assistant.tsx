@@ -2,6 +2,7 @@
 
 import { Thread } from "@/components/assistant-ui/thread";
 import { ChatProvider } from "@/components/chat/ChatProvider";
+import { SessionControls } from "@/components/chat/session-controls";
 import { useAuth } from "@/contexts/auth-context";
 
 export const Assistant = () => {
@@ -12,8 +13,11 @@ export const Assistant = () => {
 
   return (
     <ChatProvider projectId={projectId}>
-      <div className="h-full w-full bg-background">
-        <Thread />
+      <div className="h-full w-full bg-background flex flex-col overflow-hidden">
+        <SessionControls />
+        <div className="flex-1 min-h-0">
+          <Thread />
+        </div>
       </div>
     </ChatProvider>
   );

@@ -25,14 +25,14 @@ export default function Home() {
 
   // User is authenticated - show the assistant with user info
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-screen w-full overflow-hidden">
       {/* Assistant - 80% width */}
-      <div className="w-4/5">
+      <div className="w-4/5 h-full">
         <Assistant />
       </div>
       
       {/* User Info Sidebar - 20% width */}
-      <div className="w-1/5 bg-gray-50 border-l border-gray-200 p-6">
+      <div className="w-1/5 bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto">
         <div className="space-y-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">User Profile</h2>

@@ -32,7 +32,9 @@ export async function POST(
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({}), // Send empty object to satisfy backend validation
     });
 
     console.log('📡 Backend create session response:', {

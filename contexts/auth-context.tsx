@@ -58,26 +58,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Auth context useEffect triggered:', {
+      auth0Loading,
+      auth0Error: !!auth0Error,
+      auth0User: !!auth0User,
+      isLoading
+    });
+
     if (auth0Loading) {
+      console.log('Auth0 is loading, setting loading to true');
       setIsLoading(true);
       return;
     }
 
     if (auth0Error) {
+      console.log('Auth0 error, setting loading to false');
       setError(auth0Error);
       setIsLoading(false);
       return;
     }
 
     if (auth0User) {
+      console.log('Auth0 user found, fetching user data...');
       // User is authenticated with Auth0, fetch additional data from backend
       fetchUserData();
     } else {
+      console.log('No Auth0 user, clearing state');
       // No user, clear state
       setUser(null);
       setError(null);
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth0User, auth0Error, auth0Loading]);
 
   const fetchUserData = async () => {
@@ -89,6 +101,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await fetch('/api/user/me', {
         method: 'GET',
         credentials: 'include', // Include cookies
+      });
+
+      console.log('User data API response:', {
+        status: response.status,
+        ok: response.ok
       });
 
       if (!response.ok) {
@@ -120,11 +137,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(user);
       setError(null);
+      console.log('✅ User data set successfully');
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch user data');
       setError(error);
-      console.error('Failed to fetch user data:', err);
+      console.error('❌ Failed to fetch user data:', err);
     } finally {
+      console.log('🔄 Setting auth loading to false');
       setIsLoading(false);
     }
   };

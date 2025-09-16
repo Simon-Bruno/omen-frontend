@@ -57,6 +57,7 @@ class ChatApiService {
   async createOrGetSession(projectId: string): Promise<ChatSession> {
     return this.makeRequest<ChatSession>(`/api/projects/${projectId}/chat/sessions`, {
       method: 'POST',
+      body: JSON.stringify({}),
     });
   }
 
