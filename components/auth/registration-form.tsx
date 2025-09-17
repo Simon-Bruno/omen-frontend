@@ -48,7 +48,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -148,7 +148,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
               <p className="text-sm text-red-500">{errors.shop}</p>
             )}
             <p className="text-xs text-gray-500">
-              Enter your store name (e.g., "mystore") or full domain
+              Enter your store name (e.g., &quot;mystore&quot;) or full domain
             </p>
           </div>
 
@@ -165,7 +165,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500">
-              If left empty, we'll generate a secure password for you
+              If left empty, we&apos;ll generate a secure password for you
             </p>
           </div>
 
