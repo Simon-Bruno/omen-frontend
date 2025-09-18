@@ -4,7 +4,7 @@
 import { Assistant } from "./assistant";
 import { AuthFlow } from "@/components/auth/auth-flow";
 import { useAuth } from "@/contexts/auth-context";
-
+import BrandAnalysis from "@/components/brandAnalysis/brandAnalysis";
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
@@ -23,6 +23,12 @@ export default function Home() {
     return <AuthFlow />;
   }
 
+  if (user?.project?.brandAnalysis == null) {
+    return <BrandAnalysis />;
+  }
+
+
+
   // User is authenticated - show the assistant with user info
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -30,13 +36,13 @@ export default function Home() {
       <div className="w-4/5 h-full">
         <Assistant />
       </div>
-      
+
       {/* User Info Sidebar - 20% width */}
       <div className="w-1/5 bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto">
         <div className="space-y-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">User Profile</h2>
-            
+
             {/* User Avatar and Basic Info */}
             <div className="flex items-center space-x-3 mb-4">
               <img

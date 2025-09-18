@@ -1,22 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
 import { useUser } from '@auth0/nextjs-auth0';
 
-interface Shop {
-  id: number;
-  name: string;
-  domain: string;
-  email: string;
-  planName: string;
-  currency: string;
-  timezone: string;
-  country: string;
-}
 
 interface Project {
   id: string;
   shopDomain: string;
+  brandAnalysis: JSON;
 }
 
 interface User {
@@ -24,7 +15,6 @@ interface User {
   email: string;
   name?: string;
   picture?: string;
-  shop?: Shop;
   project?: Project;
 }
 
@@ -33,8 +23,8 @@ interface AuthContextType {
   error: Error | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  shop: Shop | null;
   project: Project | null;
+  refetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       console.log('🔄 Fetching user data from backend...');
-      
+
       // Call our API route which will get the token and call the backend
       const response = await fetch('/api/user/me', {
         method: 'GET',
@@ -122,19 +112,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: data.user.name || data.user.email,
         picture: data.user.picture,
         project: data.user.project,
-        // Map project to shop if needed
-        shop: data.user.project ? {
-          id: 1, // You might want to get this from the backend
-          name: data.user.project.shopDomain,
-          domain: data.user.project.shopDomain,
-          email: data.user.email,
-          planName: 'Unknown',
-          currency: 'USD',
-          timezone: 'UTC',
-          country: 'US'
-        } : undefined
       };
-      
+
       setUser(user);
       setError(null);
       console.log('✅ User data set successfully');
@@ -148,8 +127,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Refetch user data function
+  const refetchUser = useCallback(async () => {
+    if (!auth0User) return;
+
+    console.log('🔄 Refetching user data...');
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/user/me');
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+
+      const data = await response.json();
+      console.log('✅ User data refetched successfully:', data);
+      setUser(data.user);
+    } catch (err) {
+      console.error('❌ Error refetching user data:', err);
+      setError(err instanceof Error ? err : new Error('Failed to refetch user data'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [auth0User]);
+
   // Extract additional data from user object if available
-  const shop = user?.shop || null;
   const project = user?.project || null;
   const isAuthenticated = !!user;
 
@@ -158,8 +161,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error,
     isLoading,
     isAuthenticated,
-    shop,
     project,
+    refetchUser,
   };
 
   return (
