@@ -4,6 +4,7 @@ import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import { AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
+import { useEffect, useRef } from "react";
 
 export const Assistant = () => {
   const runtime = useChatRuntime({
@@ -11,6 +12,20 @@ export const Assistant = () => {
       api: "/api/chat",
     }),
   });
+
+  const hasAutoMessageSent = useRef(false);
+
+  // Auto-send a message when the component loads (only once)
+  useEffect(() => {
+    if (!hasAutoMessageSent.current) {
+      hasAutoMessageSent.current = true;
+      runtime.thread.append({
+        role: "user",
+        content: [{ type: "text", text: "Hello! What experiments do you think can help me improve my store?" }],
+        startRun: true
+      });
+    }
+  }, [runtime.thread]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
