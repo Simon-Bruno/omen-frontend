@@ -62,7 +62,7 @@ export const AuthFlow: React.FC = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Connecting to Shopify</CardTitle>
             <CardDescription>
-              Please complete the authorization in the new window
+              Omen eCommerce UX Co-Pilot - Please complete the authorization in the new window
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

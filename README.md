@@ -1,4 +1,6 @@
-This is the [assistant-ui](https://github.com/Yonom/assistant-ui) starter project.
+# Omen - eCommerce UX Co-Pilot
+
+This is the Omen project, an eCommerce UX Co-Pilot powered by AI.
 
 ## Getting Started
 

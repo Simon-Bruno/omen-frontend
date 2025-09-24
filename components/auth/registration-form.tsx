@@ -106,9 +106,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Get Started</CardTitle>
+        <CardTitle className="text-2xl font-bold">Welcome to Omen</CardTitle>
         <CardDescription>
-          Create your account and connect your Shopify store
+          eCommerce UX Co-Pilot - Create your account and connect your Shopify store
         </CardDescription>
       </CardHeader>
       <CardContent>
