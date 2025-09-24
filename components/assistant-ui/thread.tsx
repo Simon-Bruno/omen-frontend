@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MarkdownText } from "./markdown-text";
 import { ToolFallback } from "./tool-fallback";
+import { toolUIs } from "./tool-registry";
 
 export const Thread: FC = () => {
 
@@ -38,6 +39,10 @@ export const Thread: FC = () => {
         ["--thread-padding-x" as string]: "1rem",
       }}
     >
+      {/* Render all registered tool UIs */}
+      {toolUIs.map((ToolUI, index) => (
+        <ToolUI key={index} />
+      ))}
 
       {/* aui-thread-viewport */}
       <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto">
