@@ -1,6 +1,6 @@
-# Assistant UI Tool Registry
+# Omen Tool Registry
 
-This directory contains custom tool UI components for the assistant-ui library. The tool registry system allows you to create custom displays for specific tool calls made by your AI assistant.
+This directory contains custom tool UI components for the Omen eCommerce UX Co-Pilot. The tool registry system allows you to create custom displays for specific tool calls made by your AI assistant.
 
 ## Structure
 
