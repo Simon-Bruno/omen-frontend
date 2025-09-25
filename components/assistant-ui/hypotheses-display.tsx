@@ -8,6 +8,7 @@ export const HypothesesDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+
   // Handle the different statuses of the tool call
   if (status.type === "running") {
     return (
@@ -26,10 +27,10 @@ export const HypothesesDisplay = (props: any) => {
     try {
       // Parse the result - it might be a string or already parsed
       const resultData = typeof result === "string" ? JSON.parse(result) : result;
-      const parsedData = typeof resultData.hypothesesSchema === "string" 
-        ? JSON.parse(resultData.hypothesesSchema) 
+      const parsedData = typeof resultData.hypothesesSchema === "string"
+        ? JSON.parse(resultData.hypothesesSchema)
         : resultData.hypothesesSchema;
-      
+
       const hypotheses = parsedData.hypotheses || [];
 
       return (
@@ -40,8 +41,8 @@ export const HypothesesDisplay = (props: any) => {
               Generated {hypotheses.length} hypotheses
             </p>
             <div className="flex-grow" />
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
@@ -64,7 +65,7 @@ export const HypothesesDisplay = (props: any) => {
                         <h3 className="font-semibold text-gray-900 mb-2">
                           {hypothesis.hypothesis}
                         </h3>
-                        
+
                         <div className="space-y-2 text-sm">
                           <div className="flex items-start gap-2">
                             <Target className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />
