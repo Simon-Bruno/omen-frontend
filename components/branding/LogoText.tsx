@@ -29,7 +29,7 @@ const LogoText: React.FC<LogoProps> = ({
                 style={{ objectPosition: 'bottom' }}
                 priority
                 onClick={onClick ? onClick : () => {
-                    router.push('/dashboard/projects');
+                    router.push('/');
                 }}
             />
         </div>
