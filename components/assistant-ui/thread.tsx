@@ -10,7 +10,6 @@ import type { FC } from "react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  PlusIcon,
   CopyIcon,
   CheckIcon,
   PencilIcon,
@@ -175,11 +174,11 @@ const Composer: FC = () => {
         <ThreadWelcomeSuggestions />
       </ThreadPrimitive.Empty>
       {/* aui-composer-root */}
-      <ComposerPrimitive.Root className="focus-within::ring-offset-2 relative flex w-full flex-col rounded-2xl focus-within:ring-2 focus-within:ring-black dark:focus-within:ring-white">
+      <ComposerPrimitive.Root className="relative flex w-full items-center rounded-2xl bg-gray-100 border border-gray-200 focus-within:ring-1 focus-within:ring-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:focus-within:ring-gray-600">
         {/* aui-composer-input */}
         <ComposerPrimitive.Input
           placeholder="Send a message..."
-          className="bg-muted border-border dark:border-muted-foreground/15 focus:outline-primary placeholder:text-muted-foreground max-h-[calc(50dvh)] min-h-16 w-full resize-none rounded-t-2xl border-x border-t px-4 pt-2 pb-3 text-base outline-none"
+          className="bg-transparent placeholder:text-gray-400 max-h-[calc(50dvh)] min-h-12 w-full resize-none rounded-2xl px-4 py-3 pr-16 text-base outline-none text-gray-900 dark:text-gray-100"
           rows={1}
           autoFocus
           aria-label="Message input"
@@ -195,46 +194,32 @@ const ComposerAction: FC = () => {
 
   return (
     // aui-composer-action-wrapper
-    <div className="bg-muted border-border dark:border-muted-foreground/15 relative flex items-center justify-between rounded-b-2xl border-x border-b p-2">
-      <TooltipIconButton
-        tooltip="Attach file"
-        variant="ghost"
-        // aui-composer-attachment-button
-        className="hover:bg-foreground/15 dark:hover:bg-background/50 scale-115 p-3.5"
-        onClick={() => {
-          console.log("Attachment clicked - not implemented");
-        }}
-      >
-        <PlusIcon />
-      </TooltipIconButton>
-
+    <div className="flex items-center justify-end pr-2">
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
-          <Button
+          <button
             type="submit"
-            variant="default"
             // aui-composer-send
-            className="dark:border-muted-foreground/90 border-muted-foreground/60 hover:bg-primary/75 size-8 rounded-full border"
+            className="bg-black hover:bg-gray-800 text-white size-9 rounded-full border-0 flex items-center justify-center transition-colors shadow-lg hover:shadow-xl"
             aria-label="Send message"
           >
             {/* aui-composer-send-icon */}
-            <ArrowUpIcon className="size-5" />
-          </Button>
+            <ArrowUpIcon className="size-4" />
+          </button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
 
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
-          <Button
+          <button
             type="button"
-            variant="default"
             // aui-composer-cancel
-            className="dark:border-muted-foreground/90 border-muted-foreground/60 hover:bg-primary/75 size-8 rounded-full border"
+            className="bg-black hover:bg-gray-800 text-white size-9 rounded-full border-0 flex items-center justify-center transition-colors shadow-lg hover:shadow-xl"
             aria-label="Stop generating"
           >
             {/* aui-composer-cancel-icon */}
-            <Square className="size-3.5 fill-white dark:size-4 dark:fill-black" />
-          </Button>
+            <Square className="size-3 fill-white" />
+          </button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
     </div>
