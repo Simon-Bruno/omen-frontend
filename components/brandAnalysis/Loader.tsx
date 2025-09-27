@@ -65,8 +65,8 @@ const Loader = () => {
 
     const pollStatus = async () => {
       try {
-        console.log('Project ID:', user.project.id);
-        const response = await fetch(`/api/brand-summary/${jobId}?projectId=${user.project.id}`);
+        console.log('Project ID:', user.project?.id);
+        const response = await fetch(`/api/brand-summary/${jobId}?projectId=${user.project?.id}`);
         if (response.ok) {
           const data = await response.json();
           setStatus(data.status);

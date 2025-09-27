@@ -1,15 +1,10 @@
-import { ToolCallContentPartComponent } from "@assistant-ui/react";
 import { CheckIcon, Loader2 } from "lucide-react";
 
-export const BrandAnalysisDisplay: ToolCallContentPartComponent = ({
-  toolName,
-  argsText,
-  result,
-  status,
-}) => {
+export const BrandAnalysisDisplay = (props: any) => {
+  const { toolName, argsText, result, status } = props;
   const isLoading = status.type === "running";
   const isCompleted = status.type === "complete";
-  const hasError = status.type === "error";
+  const hasError = status.type === "incomplete";
 
   return (
     <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border py-3">

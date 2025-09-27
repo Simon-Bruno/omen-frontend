@@ -3,7 +3,7 @@ import { auth0 } from '@/lib/auth0';
 
 export async function POST(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
     console.log('🚀 /api/projects/[projectId]/chat/sessions POST route called');
@@ -24,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const { projectId } = params;
+    const { projectId } = await params;
 
     // Call the backend chat API
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
