@@ -429,7 +429,7 @@ export const VariantsDisplay = (props: any) => {
                     });
                     return variant.isPlaceholder;
                   })() && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/50 backdrop-blur-lg z-10 flex items-center justify-center">
                       <div className="flex flex-col items-center gap-2">
                         {variant.isCompleted ? (
                           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -459,30 +459,32 @@ export const VariantsDisplay = (props: any) => {
                     </div>
                   )}
 
-                  {/* Card content - same as real variant cards */}
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-gray-900 text-sm">
-                        {variant.variant_label}
-                      </h3>
-                      {!variant.isPlaceholder && variant.screenshot && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                  {/* Card content - only show for real variants, not placeholders */}
+                  {!variant.isPlaceholder && (
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-gray-900 text-sm">
+                          {variant.variant_label}
+                        </h3>
+                        {variant.screenshot && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                      {variant.description}
-                    </p>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        {variant.description}
+                      </p>
 
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{variant.isPlaceholder ? 'Processing...' : 'Click to view details'}</span>
-                      {!variant.isPlaceholder && <Zap className="size-3" />}
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Click to view details</span>
+                        <Zap className="size-3" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
