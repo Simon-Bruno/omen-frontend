@@ -1,29 +1,24 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Sparkles, Target, Code, Palette, MousePointer, AlertCircle, CheckCircle, ChevronRight, Copy, ExternalLink, Zap } from "lucide-react";
+import { Sparkles, CheckCircle, ChevronRight, Zap, Image, Eye, X, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { Variant } from "@/lib/chat-types";
 
 export const VariantsDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
-  const [selectedVariant, setSelectedVariant] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
+  const [selectedScreenshotVariant, setSelectedScreenshotVariant] = useState<Variant | null>(null);
   const [cardHoverStates, setCardHoverStates] = useState<Record<number, boolean>>({});
 
 
-  const copyToClipboard = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedCode(type);
-      setTimeout(() => setCopiedCode(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
 
   const handleCardHover = (index: number, isHovering: boolean) => {
     setCardHoverStates(prev => ({ ...prev, [index]: isHovering }));
+  };
+
+  const handleScreenshotClick = (variant: Variant, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent card click
+    setSelectedScreenshotVariant(variant);
+    setIsScreenshotModalOpen(true);
   };
 
   // Handle the different statuses of the tool call
@@ -67,10 +62,12 @@ export const VariantsDisplay = (props: any) => {
       
       const variants = parsedData.variants || [];
 
-      const handleVariantClick = (variant: any) => {
-        setSelectedVariant(variant);
-        setIsModalOpen(true);
-      };
+  const handleVariantClick = (variant: Variant) => {
+    if (variant.screenshot) {
+      setSelectedScreenshotVariant(variant);
+      setIsScreenshotModalOpen(true);
+    }
+  };
 
       return (
         <div className="mb-4 w-full">
@@ -88,11 +85,15 @@ export const VariantsDisplay = (props: any) => {
             variants.length === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
             'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
           }`}>
-            {variants.map((variant: any, index: number) => (
+            {variants.map((variant: Variant, index: number) => (
               <Card 
                 key={index} 
-                className={`p-4 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 cursor-pointer group transform hover:scale-105 ${
-                  cardHoverStates[index] ? 'shadow-lg scale-105' : ''
+                className={`p-4 border border-gray-200 transition-all duration-300 group transform ${
+                  variant.screenshot 
+                    ? 'hover:border-blue-300 hover:shadow-lg cursor-pointer hover:scale-105' 
+                    : 'opacity-60'
+                } ${
+                  cardHoverStates[index] && variant.screenshot ? 'shadow-lg scale-105' : ''
                 }`}
                 onClick={() => handleVariantClick(variant)}
                 onMouseEnter={() => handleCardHover(index, true)}
@@ -101,9 +102,11 @@ export const VariantsDisplay = (props: any) => {
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center transition-all duration-300 ${
-                      cardHoverStates[index] 
+                      cardHoverStates[index] && variant.screenshot
                         ? 'from-blue-600 to-purple-700 scale-110' 
-                        : 'from-blue-500 to-purple-600'
+                        : variant.screenshot
+                        ? 'from-blue-500 to-purple-600'
+                        : 'from-gray-400 to-gray-500'
                     }`}>
                       <span className="text-sm font-bold text-white">
                         {index + 1}
@@ -117,137 +120,64 @@ export const VariantsDisplay = (props: any) => {
                         {variant.description}
                       </p>
                     </div>
-                    <ChevronRight className={`size-4 text-gray-400 group-hover:text-blue-500 transition-all duration-300 ${
-                      cardHoverStates[index] ? 'translate-x-1' : ''
-                    }`} />
+                    {variant.screenshot && (
+                      <ChevronRight className={`size-4 text-gray-400 group-hover:text-blue-500 transition-all duration-300 ${
+                        cardHoverStates[index] ? 'translate-x-1' : ''
+                      }`} />
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-2 text-xs text-gray-500 group-hover:text-blue-500 transition-colors duration-300">
-                    <Zap className="size-3" />
-                    <span>Click to explore</span>
+                    {variant.screenshot ? (
+                      <>
+                        <Image className="size-3" />
+                        <span>Click to view screenshot</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="size-3" />
+                        <span>No screenshot available</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </Card>
             ))}
           </div>
 
-          {/* Modal for variant details */}
-          <Sheet open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle className="text-xl font-bold text-gray-900">
-                  {selectedVariant?.variant_label}
-                </SheetTitle>
-                <SheetDescription className="text-gray-600">
-                  {selectedVariant?.description}
-                </SheetDescription>
-              </SheetHeader>
-              
-              {selectedVariant && (
-                <div className="mt-6 space-y-6">
-                  {/* Rationale */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Target className="size-4 text-blue-600" />
-                      <h4 className="font-semibold text-gray-900">Rationale</h4>
-                    </div>
-                    <p className="text-gray-700 pl-6">{selectedVariant.rationale}</p>
+          {/* Screenshot Modal */}
+          {isScreenshotModalOpen && selectedScreenshotVariant && (
+            <div 
+              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+              onClick={() => setIsScreenshotModalOpen(false)}
+            >
+              <div 
+                className="relative max-w-5xl max-h-[90vh] bg-white rounded-lg overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between p-4 border-b">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{selectedScreenshotVariant.variant_label}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{selectedScreenshotVariant.description}</p>
                   </div>
-
-                  {/* Accessibility Consideration */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="size-4 text-orange-600" />
-                      <h4 className="font-semibold text-gray-900">Accessibility Consideration</h4>
-                    </div>
-                    <p className="text-gray-700 pl-6">{selectedVariant.accessibility_consideration}</p>
-                  </div>
-
-                  {/* Implementation Notes */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Code className="size-4 text-green-600" />
-                      <h4 className="font-semibold text-gray-900">Implementation Notes</h4>
-                    </div>
-                    <p className="text-gray-700 pl-6">{selectedVariant.implementation_notes}</p>
-                  </div>
-
-                  {/* CSS Code */}
-                  {selectedVariant.css_code && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Palette className="size-4 text-purple-600" />
-                          <h4 className="font-semibold text-gray-900">CSS Code</h4>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(selectedVariant.css_code, 'css')}
-                          className="flex items-center gap-2"
-                        >
-                          <Copy className="size-3" />
-                          {copiedCode === 'css' ? 'Copied!' : 'Copy'}
-                        </Button>
-                      </div>
-                      <div className="pl-6">
-                        <pre className="bg-gray-100 p-4 rounded-lg text-sm overflow-x-auto border">
-                          <code>{selectedVariant.css_code}</code>
-                        </pre>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Implementation Instructions */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MousePointer className="size-4 text-indigo-600" />
-                        <h4 className="font-semibold text-gray-900">Implementation Instructions</h4>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyToClipboard(selectedVariant.implementation_instructions, 'instructions')}
-                        className="flex items-center gap-2"
-                      >
-                        <Copy className="size-3" />
-                        {copiedCode === 'instructions' ? 'Copied!' : 'Copy'}
-                      </Button>
-                    </div>
-                    <div className="pl-6">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border">
-                        {selectedVariant.implementation_instructions}
-                      </pre>
-                    </div>
-                  </div>
-
-                  {/* Target Selector */}
-                  {selectedVariant.target_selector && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-gray-900">Target Selector</h4>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(selectedVariant.target_selector, 'selector')}
-                          className="flex items-center gap-2"
-                        >
-                          <Copy className="size-3" />
-                          {copiedCode === 'selector' ? 'Copied!' : 'Copy'}
-                        </Button>
-                      </div>
-                      <div className="pl-6">
-                        <code className="bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm font-mono border">
-                          {selectedVariant.target_selector}
-                        </code>
-                      </div>
-                    </div>
-                  )}
+                  <button
+                    onClick={() => setIsScreenshotModalOpen(false)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X className="size-5 text-gray-500" />
+                  </button>
                 </div>
-              )}
-            </SheetContent>
-          </Sheet>
+                <div className="p-4">
+                  <img 
+                    src={selectedScreenshotVariant.screenshot}
+                    alt={`Screenshot of ${selectedScreenshotVariant.variant_label}`}
+                    className="max-w-full max-h-[70vh] w-auto h-auto rounded-lg border border-gray-200"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       );
     } catch (e) {

@@ -31,8 +31,8 @@ export default function Home() {
 
   // User is authenticated - show the assistant with user info
   return (
-    <div className="min-h-screen bg-gray-50 px-32 py-4">
-      <div className="h-[calc(100vh-6rem)] flex gap-8">
+    <div className="h-screen bg-gray-50 px-32 py-4 overflow-hidden">
+      <div className="h-[90%] flex gap-8">
         {/* Main Chat Container - Left Side */}
         <div className="flex-1 min-w-0">
           <div className="h-full bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">

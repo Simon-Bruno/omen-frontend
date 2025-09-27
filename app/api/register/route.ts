@@ -6,20 +6,22 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, shop, password } = body;
+    const { email, shop, password, firstName, lastName } = body;
 
     console.log('📝 Registration request received:', {
       email,
       shop,
+      firstName,
+      lastName,
       hasPassword: !!password,
       timestamp: new Date().toISOString()
     });
 
     // Validate required fields
-    if (!email || !shop) {
+    if (!email || !shop || !firstName || !lastName || !password) {
       console.log('❌ Validation failed: Missing required fields');
       return NextResponse.json(
-        { message: 'Email and shop are required' },
+        { message: 'Email, shop, first name, last name, and password are required' },
         { status: 400 }
       );
     }
@@ -54,7 +56,9 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         email,
         shop: normalizedShop,
-        password: password || undefined,
+        password,
+        firstName,
+        lastName,
       }),
     });
 
