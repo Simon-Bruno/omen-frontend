@@ -1,6 +1,6 @@
 # Omen - eCommerce UX Co-Pilot
 
-This is the Omen project, an eCommerce UX Co-Pilot powered by AI.
+This is the Omen project, an eCommerce UX Co-Pilot.
 
 ## Getting Started
 
