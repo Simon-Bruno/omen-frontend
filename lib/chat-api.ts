@@ -6,6 +6,7 @@ import {
   GetActiveSessionResponse,
   ChatError,
   ChatApiConfig,
+  JobStatus,
 } from './chat-types';
 
 // Default API configuration
@@ -105,6 +106,49 @@ class ChatApiService {
   async closeSession(sessionId: string): Promise<void> {
     await this.makeRequest(`/api/chat/sessions/${sessionId}`, {
       method: 'DELETE',
+    });
+  }
+
+  /**
+   * Get job status
+   */
+  async getJobStatus(jobId: string, projectId: string): Promise<JobStatus> {
+    return this.makeRequest<JobStatus>(
+      `/api/jobs/${jobId}?projectId=${projectId}`
+    );
+  }
+
+  /**
+   * Poll job status until completion
+   */
+  async pollJobStatus(
+    jobId: string, 
+    projectId: string, 
+    onStatusUpdate?: (status: JobStatus) => void,
+    pollInterval: number = 10000
+  ): Promise<JobStatus> {
+    return new Promise((resolve, reject) => {
+      const poll = async () => {
+        try {
+          const status = await this.getJobStatus(jobId, projectId);
+          
+          if (onStatusUpdate) {
+            onStatusUpdate(status);
+          }
+
+          if (status.status === 'completed' || status.status === 'failed') {
+            resolve(status);
+            return;
+          }
+
+          // Continue polling
+          setTimeout(poll, pollInterval);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      poll();
     });
   }
 }

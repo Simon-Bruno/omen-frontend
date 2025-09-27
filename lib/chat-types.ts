@@ -80,6 +80,21 @@ export interface Variant {
   screenshot?: string; // URL to the variant screenshot
 }
 
+// Job Types
+export interface JobStatus {
+  jobId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  result?: any;
+  error?: string;
+  progress?: number;
+}
+
+export interface JobResult {
+  jobId: string;
+  status: 'completed';
+  result: any;
+}
+
 // API Configuration
 export interface ChatApiConfig {
   baseUrl: string;

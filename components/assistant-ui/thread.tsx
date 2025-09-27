@@ -252,7 +252,7 @@ const AssistantMessage: FC = () => {
         <div className="ring-border bg-background col-start-1 row-start-1 flex size-8 shrink-0 items-center justify-center rounded-full ring-1 overflow-hidden">
           <img 
             src="/assets/logo.png" 
-            alt="Agent" 
+            alt="Agent avatar" 
             className="w-full h-full object-cover"
           />
         </div>
