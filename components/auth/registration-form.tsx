@@ -16,6 +16,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
     email: "",
     shop: "",
     password: "",
+    firstName: "",
+    lastName: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -23,10 +25,24 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.firstName) {
+      newErrors.firstName = "First name is required";
+    }
+
+    if (!formData.lastName) {
+      newErrors.lastName = "Last name is required";
+    }
+
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters long";
     }
 
     if (!formData.shop) {
@@ -71,7 +87,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
         body: JSON.stringify({
           email: formData.email,
           shop: normalizedShop,
-          password: formData.password || undefined,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
         }),
       });
 
@@ -113,6 +131,44 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="firstName" className="text-sm font-medium">
+                First Name
+              </label>
+              <Input
+                id="firstName"
+                type="text"
+                placeholder="John"
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                className={errors.firstName ? "border-red-500" : ""}
+                disabled={isLoading}
+              />
+              {errors.firstName && (
+                <p className="text-sm text-red-500">{errors.firstName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="lastName" className="text-sm font-medium">
+                Last Name
+              </label>
+              <Input
+                id="lastName"
+                type="text"
+                placeholder="Doe"
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                className={errors.lastName ? "border-red-500" : ""}
+                disabled={isLoading}
+              />
+              {errors.lastName && (
+                <p className="text-sm text-red-500">{errors.lastName}</p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
               Email Address
@@ -154,18 +210,22 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, o
 
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium">
-              Password <span className="text-gray-400">(optional)</span>
+              Password
             </label>
             <Input
               id="password"
               type="password"
-              placeholder="Leave empty for auto-generated password"
+              placeholder="Enter your password"
               value={formData.password}
               onChange={(e) => handleInputChange("password", e.target.value)}
+              className={errors.password ? "border-red-500" : ""}
               disabled={isLoading}
             />
+            {errors.password && (
+              <p className="text-sm text-red-500">{errors.password}</p>
+            )}
             <p className="text-xs text-gray-500">
-              If left empty, we&apos;ll generate a secure password for you
+              Password must be at least 8 characters long
             </p>
           </div>
 

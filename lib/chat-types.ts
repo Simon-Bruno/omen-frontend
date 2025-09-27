@@ -64,6 +64,22 @@ export interface UseChatReturn {
   createNewSession: () => Promise<void>;
 }
 
+// Variant Types
+export interface Variant {
+  variant_label: string;
+  description: string;
+  rationale: string;
+  accessibility_consideration: string;
+  implementation_notes: string;
+  css_code: string;
+  html_code: string;
+  injection_method: 'selector' | 'new_element' | 'modify_existing';
+  target_selector?: string;
+  new_element_html?: string;
+  implementation_instructions: string;
+  screenshot?: string; // URL to the variant screenshot
+}
+
 // API Configuration
 export interface ChatApiConfig {
   baseUrl: string;
