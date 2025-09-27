@@ -459,32 +459,30 @@ export const VariantsDisplay = (props: any) => {
                     </div>
                   )}
 
-                  {/* Card content - only show for real variants, not placeholders */}
-                  {!variant.isPlaceholder && (
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900 text-sm">
-                          {variant.variant_label}
-                        </h3>
-                        {variant.screenshot && (
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                            </div>
+                  {/* Card content - keep structure but hide for placeholders */}
+                  <div className={`p-4 ${variant.isPlaceholder ? 'invisible' : ''}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-900 text-sm">
+                        {variant.variant_label}
+                      </h3>
+                      {!variant.isPlaceholder && variant.screenshot && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
                           </div>
-                        )}
-                      </div>
-
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                        {variant.description}
-                      </p>
-
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Click to view details</span>
-                        <Zap className="size-3" />
-                      </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      {variant.description}
+                    </p>
+
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{variant.isPlaceholder ? 'Processing...' : 'Click to view details'}</span>
+                      {!variant.isPlaceholder && <Zap className="size-3" />}
+                    </div>
+                  </div>
                 </div>
               );
             })}
