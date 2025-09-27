@@ -11,7 +11,7 @@ export const auth0 = new Auth0Client({
     secret: process.env.AUTH0_SECRET,
 
     authorizationParameters: {
-        scope: process.env.AUTH0_SCOPE,
+        scope: process.env.AUTH0_SCOPE || 'openid profile email read:shows',
         audience: process.env.AUTH0_AUDIENCE,
     }
 });
