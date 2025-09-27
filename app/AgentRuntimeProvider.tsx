@@ -4,7 +4,8 @@ import { useEffect, useRef, createContext, useContext, type ReactNode } from "re
 import {
   AssistantRuntimeProvider,
 } from "@assistant-ui/react";
-import { useDataStreamRuntime } from "@assistant-ui/react-data-stream";
+import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
+import { AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 
 // Context for current state
 const CurrentStateContext = createContext<any>(null);
@@ -25,11 +26,11 @@ export function AgentRuntimeProvider({
   // Generate session ID once and store it
   const sessionIdRef = useRef<string>('session_' + Math.random().toString(36).substr(2, 9));
 
-  // Use the DataStream runtime hook with your existing streaming endpoint
-  const runtime = useDataStreamRuntime({
-    apiUrl: '/api/chat', // This points to your existing streaming route
-    // The authentication is handled by the Next.js API route
-    // which forwards the Auth0 session to the backend
+  // Use the Chat runtime hook with your existing streaming endpoint
+  const runtime = useChatRuntime({
+    transport: new AssistantChatTransport({
+      api: "/api/chat",
+    }),
   });
 
   useEffect(() => {

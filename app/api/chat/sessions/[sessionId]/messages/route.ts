@@ -3,7 +3,7 @@ import { auth0 } from '@/lib/auth0';
 
 export async function POST(
   request: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     console.log('🚀 /api/chat/sessions/[sessionId]/messages POST route called');
@@ -24,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const { sessionId } = params;
+    const { sessionId } = await params;
     const body = await request.json();
 
     // Call the backend chat API
@@ -62,7 +62,7 @@ export async function POST(
 
 export async function GET(
   request: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     console.log('🚀 /api/chat/sessions/[sessionId]/messages GET route called');
@@ -83,7 +83,7 @@ export async function GET(
       return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const { sessionId } = params;
+    const { sessionId } = await params;
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit') || '50';
 

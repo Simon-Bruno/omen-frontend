@@ -3,7 +3,7 @@ import { auth0 } from '@/lib/auth0';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     console.log('🚀 /api/chat/sessions/[sessionId] DELETE route called');
@@ -24,7 +24,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const { sessionId } = params;
+    const { sessionId } = await params;
 
     // Call the backend chat API
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
