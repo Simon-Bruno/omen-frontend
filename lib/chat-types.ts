@@ -77,7 +77,7 @@ export interface Variant {
   target_selector?: string;
   new_element_html?: string;
   implementation_instructions: string;
-  screenshot?: string; // URL to the variant screenshot
+  screenshot?: string; // Screenshot path (e.g., "/screenshots/db/cmg3def456ghi789") or data URL
 }
 
 // Job Types
