@@ -12,7 +12,7 @@ export const HypothesesDisplay = (props: any) => {
   // Handle the different statuses of the tool call
   if (status.type === "running") {
     return (
-      <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 py-3">
+      <div className="mb-4 mt-2 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 py-3">
         <div className="flex items-center gap-2 px-4">
           <Sparkles className="size-4 animate-pulse text-blue-600" />
           <p className="text-blue-800 font-medium">
@@ -34,11 +34,11 @@ export const HypothesesDisplay = (props: any) => {
       const hypotheses = parsedData.hypotheses || [];
 
       return (
-        <div className="mb-4 w-full">
+        <div className="mb-4 mt-2 w-full">
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-green-200 bg-green-50">
             <CheckCircle className="size-4 text-green-600" />
             <p className="text-green-800 font-medium">
-              Generated {hypotheses.length} hypotheses
+              Generated {hypotheses.length} {hypotheses.length === 1 ? 'hypothesis' : 'hypotheses'}
             </p>
             <div className="flex-grow" />
             <Button
