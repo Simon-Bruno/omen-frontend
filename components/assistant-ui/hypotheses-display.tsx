@@ -34,7 +34,7 @@ export const HypothesesDisplay = (props: any) => {
       const hypotheses = parsedData.hypotheses || [];
 
       return (
-        <div className="mb-4 mt-2 w-full">
+        <div data-stage="hypotheses" className="mb-4 mt-2 w-full">
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-green-200 bg-green-50">
             <CheckCircle className="size-4 text-green-600" />
             <p className="text-green-800 font-medium">
