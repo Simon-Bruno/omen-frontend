@@ -28,6 +28,7 @@ export function getScreenshotUrl(screenshotPath: string | null | undefined): str
   // For relative paths, prepend the backend URL
   // Screenshots are served by the backend, not the Next.js frontend
   // Use NEXT_PUBLIC_ prefix for client-side access
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 
+    (typeof window !== 'undefined' ? window.location.origin.replace('platform.', 'api.') : 'http://localhost:3001');
   return `${backendUrl}${screenshotPath}`;
 }
