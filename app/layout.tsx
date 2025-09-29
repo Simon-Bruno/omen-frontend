@@ -1,13 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { Auth0Provider } from '@auth0/nextjs-auth0';
 import Header from "@/components/Header";
 
-const geistSans = Geist({
+const dmSans = localFont({
+  src: [
+    {
+      path: "../public/fonts/DMSans-VariableFont_opsz,wght.ttf",
+      weight: "100 900",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/DMSans-Italic-VariableFont_opsz,wght.ttf",
+      weight: "100 900",
+      style: "italic",
+    },
+  ],
+  // Map to the existing CSS variable so globals continue to reference it
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -36,10 +50,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" className={`${dmSans.variable} ${geistMono.variable}`}>
+      <body className="antialiased">
         <Auth0Provider>
           <AuthProvider>
             <Header />
