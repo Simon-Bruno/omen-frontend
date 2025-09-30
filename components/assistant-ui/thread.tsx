@@ -347,7 +347,7 @@ const ComposerAction: FC = () => {
           <button
             type="submit"
             // aui-composer-send
-            className="bg-black hover:bg-gray-800 text-white size-9 rounded-full border-0 flex items-center justify-center transition-colors shadow-lg hover:shadow-xl"
+            className="bg-black hover:bg-gray-800 text-white size-9 rounded-full border-0 flex items-center justify-center transition-colors shadow-lg hover:shadow-xl disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed data-[disabled]:opacity-40 data-[disabled]:bg-gray-300 data-[disabled]:text-gray-600 data-[disabled]:cursor-not-allowed dark:data-[disabled]:bg-gray-700 dark:disabled:bg-gray-700"
             aria-label="Send message"
           >
             {/* aui-composer-send-icon */}
@@ -517,7 +517,7 @@ const EditComposer: FC = () => {
             </Button>
           </ComposerPrimitive.Cancel>
           <ComposerPrimitive.Send asChild>
-            <Button size="sm" aria-label="Update message">
+          <Button size="sm" aria-label="Update message" className="data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed">
               Update
             </Button>
           </ComposerPrimitive.Send>
