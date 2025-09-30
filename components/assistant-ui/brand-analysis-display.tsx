@@ -117,11 +117,11 @@ export const BrandAnalysisDisplay = (props: any) => {
         {brandAnalysisData && (
           // Handle both correct structure and current incorrect structure where personality_words is nested
           (brandAnalysisData.brand_personality_words || brandAnalysisData.brand_trait_scores?.brand_personality_words) && (
-            <div className="flex flex-wrap gap-2 -mt-2 text-lg font-medium text-foreground/90">
+            <div className="flex flex-wrap items-center -mt-1 text-lg font-medium text-foreground/90">
               {(brandAnalysisData.brand_personality_words || brandAnalysisData.brand_trait_scores?.brand_personality_words || []).map((word, index) => (
                 <span
                   key={word}
-                  className="after:mx-2 after:content-['•'] last:after:content-none"
+                  className="before:content-['•'] before:mx-2 first:before:hidden"
                 >
                   {word}
                 </span>
@@ -189,17 +189,17 @@ export const BrandAnalysisDisplay = (props: any) => {
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="text-sm font-medium text-muted-foreground">Extracted Colors</div>
-            <div className="flex flex-col gap-3">
+            <div className="text-xl font-semibold">Extracted Colors</div>
+            <div className="mt-2 flex flex-col gap-3">
               {brandAnalysisData && brandAnalysisData.brand_colors ? (
                 brandAnalysisData.brand_colors.map((color, index) => (
-                  <div key={`${color.color}-${index}`} className="flex items-center gap-3">
+                  <div key={`${color.color}-${index}`} className="flex items-center gap-4">
                     <div
-                      className="size-6 rounded-md border border-gray-200"
+                      className="size-8 rounded-md border border-gray-200"
                       style={{ backgroundColor: color.hex_code }}
                     ></div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-foreground/80 font-medium">{color.color}</span>
+                      <span className="text-base text-foreground/80 font-medium">{color.color}</span>
                       <span className="text-xs text-foreground/60">{color.usage_type}</span>
                     </div>
                   </div>
@@ -212,9 +212,9 @@ export const BrandAnalysisDisplay = (props: any) => {
                   { name: "Gray", className: "bg-neutral-600" },
                   { name: "Tomato", className: "bg-rose-500" },
                 ].map((c) => (
-                  <div key={c.name} className="flex items-center gap-3">
-                    <div className={`size-6 rounded-md ${c.className}`}></div>
-                    <span className="text-sm text-foreground/80">{c.name}</span>
+                  <div key={c.name} className="flex items-center gap-4">
+                    <div className={`size-8 rounded-md ${c.className}`}></div>
+                    <span className="text-base text-foreground/80">{c.name}</span>
                   </div>
                 ))
               )}

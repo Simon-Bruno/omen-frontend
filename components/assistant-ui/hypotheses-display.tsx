@@ -1,5 +1,7 @@
-import { Card } from "@/components/ui/card";
-import { Sparkles, Target, BarChart3, CheckCircle, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { AlertCircle, Loader2, Target, TrendingUp, Activity, AlertTriangle, LineChart } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
@@ -12,14 +14,60 @@ export const HypothesesDisplay = (props: any) => {
   // Handle the different statuses of the tool call
   if (status.type === "running") {
     return (
-      <div className="mb-4 mt-2 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 py-3">
-        <div className="flex items-center gap-2 px-4">
-          <Sparkles className="size-4 animate-pulse text-blue-600" />
-          <p className="text-blue-800 font-medium">
-            Generating hypotheses...
-          </p>
-        </div>
-      </div>
+      <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center">
+                {/* Refined gradient sparkles icon (consistent with Brand Insights) */}
+                <svg
+                  className="size-9"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <defs>
+                    <linearGradient id="hypoSparklesGradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="55%" stopColor="#a78bfa" />
+                      <stop offset="100%" stopColor="#f59e0b" />
+                    </linearGradient>
+                    <filter id="hypoSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="0.8" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <g stroke="url(#hypoSparklesGradient)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" filter="url(#hypoSoftGlow)">
+                    {/* Flask rim and neck */}
+                    <path d="M10 2h4" />
+                    <path d="M12 2v4" />
+                    <path d="M9 6h6" />
+                    {/* Flask body */}
+                    <path d="M9 6l-5 9a7 7 0 0 0 6 5h4a7 7 0 0 0 6-5l-5-9" />
+                    {/* Liquid line */}
+                    <path d="M8.5 13h7" />
+                  </g>
+                  {/* Bubbles */}
+                  <g stroke="url(#hypoSparklesGradient)" strokeWidth="1.2" opacity="0.95">
+                    <circle cx="10" cy="11" r="0.9" />
+                    <circle cx="14" cy="15" r="0.9" />
+                  </g>
+                </svg>
+              </div>
+              <CardTitle className="text-3xl">Hypotheses</CardTitle>
+            </div>
+            <Badge variant="secondary" className="gap-1">
+              <Loader2 className="size-3 animate-spin" />
+              Loading
+            </Badge>
+          </div>
+          <p className="max-w-3xl text-muted-foreground">Generating hypotheses based on the brand analysis and goals.</p>
+        </CardHeader>
+      </Card>
     );
   }
 
@@ -34,105 +82,194 @@ export const HypothesesDisplay = (props: any) => {
       const hypotheses = parsedData.hypotheses || [];
 
       return (
-        <div data-stage="hypotheses" className="mb-4 mt-2 w-full">
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-green-200 bg-green-50">
-            <CheckCircle className="size-4 text-green-600" />
-            <p className="text-green-800 font-medium">
-              Generated {hypotheses.length} {hypotheses.length === 1 ? 'hypothesis' : 'hypotheses'}
-            </p>
-            <div className="flex-grow" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-            >
-              {isCollapsed ? <ChevronDownIcon className="size-4" /> : <ChevronUpIcon className="size-4" />}
-            </Button>
-          </div>
-
-          {!isCollapsed && (
-            <div className="mt-3 space-y-4">
-              {hypotheses.map((hypothesis: any, index: number) => (
-                <Card key={index} className="p-4 border border-gray-200">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-blue-600">
-                          {index + 1}
+        <>
+          <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center">
+                    {/* Gradient sparkles icon for branding consistency */}
+                    <svg
+                      className="size-9"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <linearGradient id="hypoSparklesGradient2" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#3b82f6" />
+                          <stop offset="55%" stopColor="#a78bfa" />
+                          <stop offset="100%" stopColor="#f59e0b" />
+                        </linearGradient>
+                        <filter id="hypoSoftGlow2" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="0.8" result="blur" />
+                          <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <g stroke="url(#hypoSparklesGradient2)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" filter="url(#hypoSoftGlow2)">
+                        {/* Flask rim and neck */}
+                        <path d="M10 2h4" />
+                        <path d="M12 2v4" />
+                        <path d="M9 6h6" />
+                        {/* Flask body */}
+                        <path d="M9 6l-5 9a7 7 0 0 0 6 5h4a7 7 0 0 0 6-5l-5-9" />
+                        {/* Liquid line */}
+                        <path d="M8.5 13h7" />
+                      </g>
+                      {/* Bubbles */}
+                      <g stroke="url(#hypoSparklesGradient2)" strokeWidth="1.2" opacity="0.95">
+                        <circle cx="10" cy="11" r="0.9" />
+                        <circle cx="14" cy="15" r="0.9" />
+                      </g>
+                    </svg>
+                  </div>
+                  <CardTitle className="text-3xl">Hypothesis</CardTitle>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                  >
+                    {isCollapsed ? <ChevronDownIcon className="size-4" /> : <ChevronUpIcon className="size-4" />}
+                  </Button>
+                </div>
+              </div>
+              {!isCollapsed && (
+                <div className="max-w-3xl text-muted-foreground">
+                  {hypotheses.length > 0 ? (
+                    <div className="flex flex-wrap items-center text-foreground/90">
+                      {hypotheses.map((h: any, idx: number) => (
+                        <span key={idx} className="before:content-['•'] before:mx-2 first:before:hidden">
+                          {h.hypothesis}
                         </span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-2">
-                          {hypothesis.hypothesis}
-                        </h3>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-foreground/90">No hypotheses generated.</span>
+                  )}
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Target className="size-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-800">Primary outcome</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-slate-700">
+                  <Badge variant="secondary" className="text-slate-700">Checkout conversion</Badge>
+                </div>
+              </div>
 
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-start gap-2">
-                            <Target className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <span className="font-medium text-gray-700">Rationale:</span>
-                              <p className="text-gray-600 mt-1">{hypothesis.rationale}</p>
-                            </div>
-                          </div>
+              <Separator />
 
-                          <div className="flex items-start gap-2">
-                            <BarChart3 className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <span className="font-medium text-gray-700">Measurable Tests:</span>
-                              <p className="text-gray-600 mt-1">{hypothesis.measurable_tests}</p>
-                            </div>
-                          </div>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="size-4 text-violet-600" />
+                  <span className="text-sm font-semibold text-slate-800">Driver metrics</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2">
+                    <div className="text-sm text-slate-700">PDP → ATC rate</div>
+                    <Badge className="bg-blue-50 text-blue-700 border border-blue-200">+4–6% expected</Badge>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2">
+                    <div className="text-sm text-slate-700">ATC → Checkout start</div>
+                    <Badge className="bg-blue-50 text-blue-700 border border-blue-200">+2–4% expected</Badge>
+                  </div>
+                </div>
+              </div>
 
-                          <div className="flex items-start gap-2">
-                            <CheckCircle className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <span className="font-medium text-gray-700">Success Metrics:</span>
-                              <p className="text-gray-600 mt-1">{hypothesis.success_metrics}</p>
-                            </div>
-                          </div>
+              <Separator />
 
-                          <div className="flex items-start gap-2">
-                            <BarChart3 className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <span className="font-medium text-gray-700">OEC (Overall Evaluation Criteria):</span>
-                              <p className="text-gray-600 mt-1">{hypothesis.oec}</p>
-                            </div>
-                          </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="size-4 text-rose-600" />
+                  <span className="text-sm font-semibold text-slate-800">Bottleneck identified</span>
+                </div>
+                <div className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2">
+                  <span className="text-sm text-rose-800">Checkout start → Payment</span>
+                  <Badge className="bg-rose-600 hover:bg-rose-600">−14% drop-off</Badge>
+                </div>
+              </div>
 
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="size-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <span className="font-medium text-gray-700">Accessibility Check:</span>
-                              <p className="text-gray-600 mt-1">{hypothesis.accessibility_check}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+              <Separator />
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Activity className="size-4 text-emerald-600" />
+                  <span className="text-sm font-semibold text-slate-800">Why this should work</span>
+                </div>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
+                  <li>Quant: Heatmaps show 32% hover on trust badges but low visibility above the fold.</li>
+                  <li>Qual: Session replays reveal confusion on shipping costs at checkout.</li>
+                  <li>Copy insight: "Free returns" phrasing increased CTR +8% in past campaigns.</li>
+                  <li>User quote: “I wasn’t sure if shipping was included until the last step.”</li>
+                </ul>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-md border border-gray-200 bg-white p-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <LineChart className="size-4 text-slate-500" /> Baseline of OEC
+                  </div>
+                  <div className="mt-1 text-2xl font-semibold text-slate-900">2.4%</div>
+                  <div className="text-xs text-slate-500">Checkout conversion</div>
+                </div>
+                <div className="rounded-md border border-gray-200 bg-white p-3">
+                  <div className="text-xs font-medium text-slate-500">Predicted lift — Low</div>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-xl font-semibold text-slate-900">+1%</span>
+                    <Badge variant="secondary">Conservative</Badge>
+                  </div>
+                </div>
+                <div className="rounded-md border border-gray-200 bg-white p-3">
+                  <div className="text-xs font-medium text-slate-500">Predicted lift — Likely / High</div>
+                  <div className="mt-1 flex items-center gap-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-semibold text-slate-900">+3%</span>
+                      <Badge variant="secondary">Likely</Badge>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-semibold text-slate-900">+6%</span>
+                      <Badge className="bg-blue-600 hover:bg-blue-600">High</Badge>
                     </div>
                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       );
     } catch (e) {
       console.error("Failed to parse hypotheses JSON:", e);
       return (
-        <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-red-200 bg-red-50 py-3">
-          <div className="flex items-center gap-2 px-4">
-            <AlertCircle className="size-4 text-red-600" />
-            <p className="text-red-800 font-medium">
-              Error displaying hypotheses
-            </p>
-          </div>
-          <div className="px-4 text-sm text-red-700">
-            <p>Failed to parse hypotheses data. Raw result:</p>
-            <pre className="mt-2 whitespace-pre-wrap text-xs bg-red-100 p-2 rounded">
+        <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+          <CardHeader className="gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex size-9 items-center justify-center rounded-md bg-red-100 text-red-600">
+                  <AlertCircle className="size-5" />
+                </div>
+                <CardTitle className="text-3xl">Hypotheses</CardTitle>
+              </div>
+              <Badge className="bg-red-600 hover:bg-red-600">Failed</Badge>
+            </div>
+            <p className="max-w-3xl text-muted-foreground">Error displaying hypotheses. Failed to parse hypotheses data.</p>
+          </CardHeader>
+          <CardContent>
+            <pre className="whitespace-pre-wrap text-xs bg-red-50 text-red-700 p-3 rounded border border-red-200">
               {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
             </pre>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       );
     }
   }
@@ -140,33 +277,69 @@ export const HypothesesDisplay = (props: any) => {
   // Handle incomplete status (error, abort, timeout, etc.)
   if (status.type === "incomplete") {
     return (
-      <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-red-200 bg-red-50 py-3">
-        <div className="flex items-center gap-2 px-4">
-          <AlertCircle className="size-4 text-red-600" />
-          <p className="text-red-800 font-medium">
-            Tool call failed: {status.reason || "unknown error"}
-          </p>
-        </div>
+      <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+        <CardHeader className="gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex size-9 items-center justify-center rounded-md bg-red-100 text-red-600">
+                <AlertCircle className="size-5" />
+              </div>
+              <CardTitle className="text-3xl">Hypotheses</CardTitle>
+            </div>
+            <Badge className="bg-red-600 hover:bg-red-600">Failed</Badge>
+          </div>
+          <p className="max-w-3xl text-muted-foreground">Tool call failed: {status.reason || "unknown error"}</p>
+        </CardHeader>
         {status.error && (
-          <div className="px-4 text-sm text-red-700">
-            <pre className="whitespace-pre-wrap text-xs bg-red-100 p-2 rounded">
+          <CardContent>
+            <pre className="whitespace-pre-wrap text-xs bg-red-50 text-red-700 p-3 rounded border border-red-200">
               {typeof status.error === 'string' ? status.error : JSON.stringify(status.error, null, 2)}
             </pre>
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     );
   }
 
   // Fallback for any other states
   return (
-    <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-gray-200 py-3">
-      <div className="flex items-center gap-2 px-4">
-        <AlertCircle className="size-4 text-gray-500" />
-        <p className="text-gray-700">
-          Tool call status: {status.type}
-        </p>
-      </div>
-    </div>
+    <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center">
+              <svg
+                className="size-9"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient id="hypoSparklesGradientIdle" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="55%" stopColor="#a78bfa" />
+                    <stop offset="100%" stopColor="#f59e0b" />
+                  </linearGradient>
+                </defs>
+                <g stroke="url(#hypoSparklesGradientIdle)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  {/* Flask rim and neck */}
+                  <path d="M10 2h4" />
+                  <path d="M12 2v4" />
+                  <path d="M9 6h6" />
+                  {/* Flask body */}
+                  <path d="M9 6l-5 9a7 7 0 0 0 6 5h4a7 7 0 0 0 6-5l-5-9" />
+                  {/* Liquid line */}
+                  <path d="M8.5 13h7" />
+                </g>
+              </svg>
+            </div>
+            <CardTitle className="text-3xl">Hypotheses</CardTitle>
+          </div>
+          <Badge variant="secondary">{status.type}</Badge>
+        </div>
+        <p className="max-w-3xl text-muted-foreground">Awaiting hypotheses generation.</p>
+      </CardHeader>
+    </Card>
   );
 };
