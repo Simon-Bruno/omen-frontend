@@ -168,6 +168,11 @@ export const BrandAnalysisDisplay = (props: any) => {
                     axisLine={false}
                     tick={{ fill: "#374151", fontSize: 14, fontWeight: 600 }}
                   />
+                  <PolarRadiusAxis
+                    domain={[0, 100]}
+                    tick={false}
+                    axisLine={false}
+                  />
                   <Radar 
                     name="Brand" 
                     dataKey="value" 
