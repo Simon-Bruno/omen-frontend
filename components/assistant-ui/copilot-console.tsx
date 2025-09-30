@@ -174,9 +174,15 @@ export function CopilotConsole({
       default:
         return;
     }
+
+    const viewport = document.querySelector('[data-aui="thread-viewport"]') as HTMLElement | null;
     const el = document.querySelector(selector) as HTMLElement | null;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    if (viewport && el) {
+      const viewportRect = viewport.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const targetTop = elRect.top - viewportRect.top + viewport.scrollTop;
+      viewport.scrollTo({ top: targetTop, behavior: "smooth" });
     }
   };
 
