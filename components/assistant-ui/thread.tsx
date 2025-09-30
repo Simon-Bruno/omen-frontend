@@ -75,13 +75,11 @@ const ThreadScrollToBottom: FC<{ inline?: boolean }> = ({ inline = false }) => {
     <ThreadPrimitive.ScrollToBottom asChild>
       <TooltipIconButton
         tooltip="Scroll to bottom"
-        variant="outline"
+        variant="ghost"
         // aui-thread-scroll-to-bottom
         className={cn(
-          "rounded-full disabled:invisible",
-          inline
-            ? "p-2 size-8"
-            : "dark:bg-background dark:hover:bg-accent absolute -top-12 z-10 self-center p-4",
+          "rounded-full border border-gray-200/70 bg-white/70 text-gray-800 shadow-xs hover:bg-black hover:text-white dark:border-gray-700/60 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-white dark:hover:text-black transition-all backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm ease-in-out duration-300 disabled:invisible",
+          inline ? "p-2 size-8" : "absolute -top-12 z-10 self-center p-4",
         )}
       >
         <ArrowDownIcon className={cn(inline ? "size-4" : undefined)} />
@@ -402,9 +400,10 @@ const AssistantMessage: FC = () => {
           <NextImage
             src="/assets/logo_small.png"
             alt="Agent avatar"
-            fill
-            sizes="32px"
-            className="object-cover"
+            width={128}
+            height={128}
+            sizes="128px"
+            className="object-contain"
             priority={false}
           />
         </div>
