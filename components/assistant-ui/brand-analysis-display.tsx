@@ -1,11 +1,15 @@
-import { CheckIcon, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { CheckIcon, Loader2, Sparkles, AlertCircle, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { BrandAnalysisFunctionCallResponse, BrandAnalysisResponse } from "@/lib/chat-types";
+import { useState } from "react";
+import { Button } from "../ui/button";
+import { AnimatePresence, motion } from "framer-motion";
 
 export const BrandAnalysisDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const isLoading = status.type === "running";
   const isCompleted = status.type === "complete";
   const hasError = status.type === "incomplete";
@@ -93,7 +97,7 @@ export const BrandAnalysisDisplay = (props: any) => {
             </div>
             <CardTitle className="text-3xl">Brand Insights</CardTitle>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             {isLoading && (
               <Badge variant="secondary" className="gap-1">
                 <Loader2 className="size-3 animate-spin" />
@@ -103,6 +107,14 @@ export const BrandAnalysisDisplay = (props: any) => {
             {hasError && (
               <Badge className="bg-red-600 hover:bg-red-600">Failed</Badge>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              aria-label={isCollapsed ? "Expand brand insights" : "Collapse brand insights"}
+            >
+              {isCollapsed ? <ChevronDownIcon className="size-4" /> : <ChevronUpIcon className="size-4" />}
+            </Button>
           </div>
         </div>
 
@@ -131,97 +143,109 @@ export const BrandAnalysisDisplay = (props: any) => {
         )}
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="md:col-span-2">
-            <div className="text-xl font-semibold">Brand Archetype</div>
-            <div className="mt-3 h-80 pointer-events-none">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart
-                  data={brandAnalysisData ? [
-                    { trait: "Premium", value: brandAnalysisData.brand_trait_scores.premium.score },
-                    { trait: "Energetic", value: brandAnalysisData.brand_trait_scores.energetic.score },
-                    { trait: "Innovator", value: brandAnalysisData.brand_trait_scores.innovator.score },
-                    { trait: "Social Proof", value: brandAnalysisData.brand_trait_scores.social_proof.score },
-                    { trait: "Curated", value: brandAnalysisData.brand_trait_scores.curated.score },
-                    { trait: "Serious", value: brandAnalysisData.brand_trait_scores.serious.score },
-                  ] : [
-                    { trait: "Premium", value: 0 },
-                    { trait: "Energetic", value: 0 },
-                    { trait: "Innovator", value: 0 },
-                    { trait: "Social Proof", value: 0 },
-                    { trait: "Curated", value: 0 },
-                    { trait: "Serious", value: 0 },
-                  ]}
-                  outerRadius="80%"
-                >
-                  <PolarGrid 
-                    radialLines={false} 
-                    stroke="#d1d5db" 
-                    strokeOpacity={0.9}
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
-                  <PolarAngleAxis 
-                    dataKey="trait"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fill: "#374151", fontSize: 14, fontWeight: 600 }}
-                  />
-                  <PolarRadiusAxis
-                    domain={[0, 100]}
-                    tick={false}
-                    axisLine={false}
-                  />
-                  <Radar 
-                    name="Brand" 
-                    dataKey="value" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="#3b82f6" 
-                    fillOpacity={0.2}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+      <AnimatePresence initial={false} mode="wait">
+        {!isCollapsed && (
+          <motion.div
+            key="brand-content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="md:col-span-2">
+                  <div className="text-xl font-semibold">Brand Archetype</div>
+                  <div className="mt-3 h-80 pointer-events-none">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart
+                        data={brandAnalysisData ? [
+                          { trait: "Premium", value: brandAnalysisData.brand_trait_scores.premium.score },
+                          { trait: "Energetic", value: brandAnalysisData.brand_trait_scores.energetic.score },
+                          { trait: "Innovator", value: brandAnalysisData.brand_trait_scores.innovator.score },
+                          { trait: "Social Proof", value: brandAnalysisData.brand_trait_scores.social_proof.score },
+                          { trait: "Curated", value: brandAnalysisData.brand_trait_scores.curated.score },
+                          { trait: "Serious", value: brandAnalysisData.brand_trait_scores.serious.score },
+                        ] : [
+                          { trait: "Premium", value: 0 },
+                          { trait: "Energetic", value: 0 },
+                          { trait: "Innovator", value: 0 },
+                          { trait: "Social Proof", value: 0 },
+                          { trait: "Curated", value: 0 },
+                          { trait: "Serious", value: 0 },
+                        ]}
+                        outerRadius="80%"
+                      >
+                        <PolarGrid 
+                          radialLines={false} 
+                          stroke="#d1d5db" 
+                          strokeOpacity={0.9}
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        <PolarAngleAxis 
+                          dataKey="trait"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: "#374151", fontSize: 14, fontWeight: 600 }}
+                        />
+                        <PolarRadiusAxis
+                          domain={[0, 100]}
+                          tick={false}
+                          axisLine={false}
+                        />
+                        <Radar 
+                          name="Brand" 
+                          dataKey="value" 
+                          stroke="#3b82f6" 
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="#3b82f6" 
+                          fillOpacity={0.2}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="text-xl font-semibold">Extracted Colors</div>
-            <div className="mt-2 flex flex-col gap-3">
-              {brandAnalysisData && brandAnalysisData.brand_colors ? (
-                brandAnalysisData.brand_colors.map((color, index) => (
-                  <div key={`${color.color}-${index}`} className="flex items-center gap-4">
-                    <div
-                      className="size-8 rounded-md border border-gray-200"
-                      style={{ backgroundColor: color.hex_code }}
-                    ></div>
-                    <div className="flex flex-col">
-                      <span className="text-base text-foreground/80 font-medium">{color.color}</span>
-                      <span className="text-xs text-foreground/60">{color.usage_type}</span>
-                    </div>
+                <div className="flex flex-col gap-3">
+                  <div className="text-xl font-semibold">Extracted Colors</div>
+                  <div className="mt-2 flex flex-col gap-3">
+                    {brandAnalysisData && brandAnalysisData.brand_colors ? (
+                      brandAnalysisData.brand_colors.map((color, index) => (
+                        <div key={`${color.color}-${index}`} className="flex items-center gap-4">
+                          <div
+                            className="size-8 rounded-md border border-gray-200"
+                            style={{ backgroundColor: color.hex_code }}
+                          ></div>
+                          <div className="flex flex-col">
+                            <span className="text-base text-foreground/80 font-medium">{color.color}</span>
+                            <span className="text-xs text-foreground/60">{color.usage_type}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      [
+                        { name: "Coal", className: "bg-neutral-900" },
+                        { name: "Snow", className: "bg-white border" },
+                        { name: "Gray", className: "bg-neutral-600" },
+                        { name: "Tomato", className: "bg-rose-500" },
+                      ].map((c) => (
+                        <div key={c.name} className="flex items-center gap-4">
+                          <div className={`size-8 rounded-md ${c.className}`}></div>
+                          <span className="text-base text-foreground/80">{c.name}</span>
+                        </div>
+                      ))
+                    )}
                   </div>
-                ))
-              ) : (
-                // Fallback when no data is available
-                [
-                  { name: "Coal", className: "bg-neutral-900" },
-                  { name: "Snow", className: "bg-white border" },
-                  { name: "Gray", className: "bg-neutral-600" },
-                  { name: "Tomato", className: "bg-rose-500" },
-                ].map((c) => (
-                  <div key={c.name} className="flex items-center gap-4">
-                    <div className={`size-8 rounded-md ${c.className}`}></div>
-                    <span className="text-base text-foreground/80">{c.name}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </CardContent>
+                </div>
+              </div>
+            </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Card>
   );
 };

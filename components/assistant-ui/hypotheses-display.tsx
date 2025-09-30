@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, Loader2, Target, TrendingUp, Activity, AlertTriangle, LineChart } from "lucide-react";
+import { AlertCircle, Loader2, TrendingUp, Activity, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export const HypothesesDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
@@ -80,6 +81,7 @@ export const HypothesesDisplay = (props: any) => {
         : resultData.hypothesesSchema;
 
       const hypotheses = parsedData.hypotheses || [];
+      const primaryHypothesis = hypotheses[0]?.hypothesis as string | undefined;
 
       return (
         <>
@@ -139,112 +141,71 @@ export const HypothesesDisplay = (props: any) => {
                   </Button>
                 </div>
               </div>
-              {!isCollapsed && (
-                <div className="max-w-3xl text-muted-foreground">
-                  {hypotheses.length > 0 ? (
-                    <div className="flex flex-wrap items-center text-foreground/90">
-                      {hypotheses.map((h: any, idx: number) => (
-                        <span key={idx} className="before:content-['•'] before:mx-2 first:before:hidden">
-                          {h.hypothesis}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-foreground/90">No hypotheses generated.</span>
-                  )}
-                </div>
-              )}
+              <div className="max-w-3xl text-muted-foreground">
+                {primaryHypothesis ? (
+                  <span className="text-foreground/90">{primaryHypothesis}</span>
+                ) : (
+                  <span className="text-foreground/90">No hypotheses generated.</span>
+                )}
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <Target className="size-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-slate-800">Primary outcome</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-slate-700">
-                  <Badge variant="secondary" className="text-slate-700">Checkout conversion</Badge>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="size-4 text-violet-600" />
-                  <span className="text-sm font-semibold text-slate-800">Driver metrics</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2">
-                    <div className="text-sm text-slate-700">PDP → ATC rate</div>
-                    <Badge className="bg-blue-50 text-blue-700 border border-blue-200">+4–6% expected</Badge>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2">
-                    <div className="text-sm text-slate-700">ATC → Checkout start</div>
-                    <Badge className="bg-blue-50 text-blue-700 border border-blue-200">+2–4% expected</Badge>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="size-4 text-rose-600" />
-                  <span className="text-sm font-semibold text-slate-800">Bottleneck identified</span>
-                </div>
-                <div className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2">
-                  <span className="text-sm text-rose-800">Checkout start → Payment</span>
-                  <Badge className="bg-rose-600 hover:bg-rose-600">−14% drop-off</Badge>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <Activity className="size-4 text-emerald-600" />
-                  <span className="text-sm font-semibold text-slate-800">Why this should work</span>
-                </div>
-                <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
-                  <li>Quant: Heatmaps show 32% hover on trust badges but low visibility above the fold.</li>
-                  <li>Qual: Session replays reveal confusion on shipping costs at checkout.</li>
-                  <li>Copy insight: "Free returns" phrasing increased CTR +8% in past campaigns.</li>
-                  <li>User quote: “I wasn’t sure if shipping was included until the last step.”</li>
-                </ul>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-md border border-gray-200 bg-white p-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <LineChart className="size-4 text-slate-500" /> Baseline of OEC
-                  </div>
-                  <div className="mt-1 text-2xl font-semibold text-slate-900">2.4%</div>
-                  <div className="text-xs text-slate-500">Checkout conversion</div>
-                </div>
-                <div className="rounded-md border border-gray-200 bg-white p-3">
-                  <div className="text-xs font-medium text-slate-500">Predicted lift — Low</div>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-xl font-semibold text-slate-900">+1%</span>
-                    <Badge variant="secondary">Conservative</Badge>
-                  </div>
-                </div>
-                <div className="rounded-md border border-gray-200 bg-white p-3">
-                  <div className="text-xs font-medium text-slate-500">Predicted lift — Likely / High</div>
-                  <div className="mt-1 flex items-center gap-3">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-semibold text-slate-900">+3%</span>
-                      <Badge variant="secondary">Likely</Badge>
+            <AnimatePresence initial={false} mode="wait">
+              {!isCollapsed && (
+                <motion.div
+                  key="hypothesis-content"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.28, ease: "easeInOut" }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 items-center text-center">
+                      <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200 first:md:border-l-0">
+                        <div className="text-2xl md:text-3xl font-semibold leading-none tracking-tight text-slate-900">Checkout conversion</div>
+                        <div className="mt-2 text-sm text-slate-500">Primary outcome</div>
+                      </div>
+                      <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200">
+                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-slate-900">2.4%</div>
+                        <div className="mt-2 text-sm text-slate-500">Current conversion</div>
+                      </div>
+                      <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200">
+                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-green-600">+3–6%</div>
+                        <div className="mt-2 text-sm text-slate-500">Expected increase</div>
+                      </div>
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-semibold text-slate-900">+6%</span>
-                      <Badge className="bg-blue-600 hover:bg-blue-600">High</Badge>
+
+                    <Separator />
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="size-4 text-rose-600" />
+                        <span className="text-sm font-semibold text-slate-800">Bottleneck identified</span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2">
+                        <span className="text-sm text-rose-800">Checkout start → Payment</span>
+                        <Badge className="bg-rose-600 hover:bg-rose-600">−14% drop-off</Badge>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
+
+                    <Separator />
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Activity className="size-4 text-emerald-600" />
+                        <span className="text-sm font-semibold text-slate-800">Why this experiment should work</span>
+                      </div>
+                      <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
+                        <li>Quant: Heatmaps show 32% hover on trust badges but low visibility above the fold.</li>
+                        <li>Qual: Session replays reveal confusion on shipping costs at checkout.</li>
+                        <li>Copy insight: "Free returns" phrasing increased CTR +8% in past campaigns.</li>
+                        <li>User quote: “I wasn’t sure if shipping was included until the last step.”</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
         </>
       );
