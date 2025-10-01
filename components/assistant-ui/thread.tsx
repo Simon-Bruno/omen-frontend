@@ -201,8 +201,7 @@ const ComposerSuggestions: FC = () => {
     ],
     variants: [
       { label: "Proceed to experiment setup", prompt: "Proceed to experiment setup and configuration" },
-      { label: "Generate more variants", prompt: "Generate more variants with different creative directions" },
-      { label: "QA the generated variants", prompt: "Run a QA checklist on the generated variants" },
+      { label: "Explain the variants", prompt: "Explain the variants" },
     ],
     "experiment-creation": [
       { label: "Configure traffic & targeting", prompt: "Configure experiment traffic allocation and targeting rules" },
