@@ -10,7 +10,7 @@ export default function Logo({ className = '', width = 32, height = 32 }: LogoPr
   return (
     <div className={`flex items-center ${className}`}>
       <Image
-        src="/assets/logo.png"
+        src="/assets/logo_small.png"
         alt="Omen Logo"
         width={width}
         height={height}

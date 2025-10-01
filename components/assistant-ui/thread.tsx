@@ -7,6 +7,8 @@ import {
   ErrorPrimitive,
 } from "@assistant-ui/react";
 import type { FC } from "react";
+import NextImage from "next/image";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -20,7 +22,7 @@ import {
 } from "lucide-react";
 
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MarkdownText } from "./markdown-text";
@@ -35,7 +37,7 @@ export const Thread: FC = () => {
       className="bg-background flex h-full flex-col"
       style={{
         ["--thread-max-width" as string]: "48rem",
-        ["--thread-padding-x" as string]: "1rem",
+        ["--thread-padding-x" as string]: "0rem",
       }}
     >
       {/* Render all registered tool UIs */}
@@ -44,7 +46,7 @@ export const Thread: FC = () => {
       ))}
 
       {/* aui-thread-viewport */}
-      <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto">
+      <ThreadPrimitive.Viewport data-aui="thread-viewport" className="relative flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto">
         <ThreadWelcome />
 
         <ThreadPrimitive.Messages
@@ -68,16 +70,19 @@ export const Thread: FC = () => {
   );
 };
 
-const ThreadScrollToBottom: FC = () => {
+const ThreadScrollToBottom: FC<{ inline?: boolean }> = ({ inline = false }) => {
   return (
     <ThreadPrimitive.ScrollToBottom asChild>
       <TooltipIconButton
         tooltip="Scroll to bottom"
-        variant="outline"
+        variant="ghost"
         // aui-thread-scroll-to-bottom
-        className="dark:bg-background dark:hover:bg-accent absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible"
+        className={cn(
+          "rounded-full border border-gray-200/70 bg-white/70 text-gray-800 shadow-xs hover:bg-black hover:text-white dark:border-gray-700/60 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-white dark:hover:text-black transition-all backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm ease-in-out duration-300 disabled:invisible",
+          inline ? "p-2 size-8" : "absolute -top-12 z-10 self-center p-4",
+        )}
       >
-        <ArrowDownIcon />
+        <ArrowDownIcon className={cn(inline ? "size-4" : undefined)} />
       </TooltipIconButton>
     </ThreadPrimitive.ScrollToBottom>
   );
@@ -163,18 +168,160 @@ const ThreadWelcomeSuggestions: FC = () => {
   );
 };
 
+const ComposerSuggestions: FC = () => {
+  // Detect current stage by checking rendered tool cards in the viewport
+  // Priority order reflects the funnel: brand-analysis -> hypotheses -> variants -> experiment-creation
+  let stage: "brand-analysis" | "hypotheses" | "variants" | "experiment-creation" | "welcome" = "welcome";
+
+  if (typeof window !== "undefined") {
+    const viewport = document.querySelector('[data-aui="thread-viewport"]') || document;
+    if (viewport.querySelector('[data-stage="experiment-creation"]')) {
+      stage = "experiment-creation";
+    } else if (viewport.querySelector('[data-stage="variants"]')) {
+      stage = "variants";
+    } else if (viewport.querySelector('[data-stage="hypotheses"]')) {
+      stage = "hypotheses";
+    } else if (viewport.querySelector('[data-stage="brand-analysis"]')) {
+      stage = "brand-analysis";
+    }
+  }
+
+  const stageToSuggestions: Record<string, { label: string; prompt: string }[]> = {
+    welcome: [
+      { label: "Let's look at the Brand Analysis", prompt: "Let's look at the brand analysis" },
+      { label: "Go straight to Experiment Creation", prompt: "Let's go straight to experiment creation" },
+    ],
+    "brand-analysis": [
+      { label: "Generate hypotheses", prompt: "Based on the brand analysis, generate testable hypotheses" },
+      { label: "Show key brand insights", prompt: "Summarize the key insights from the brand analysis" },
+    ],
+    hypotheses: [
+      { label: "Create variants for top hypothesis", prompt: "Create variants for the top scoring hypothesis" },
+      { label: "Refine hypotheses", prompt: "Refine the hypotheses to be more specific and testable" },
+    ],
+    variants: [
+      { label: "Proceed to experiment setup", prompt: "Proceed to experiment setup and configuration" },
+      { label: "Generate more variants", prompt: "Generate more variants with different creative directions" },
+      { label: "QA the generated variants", prompt: "Run a QA checklist on the generated variants" },
+    ],
+    "experiment-creation": [
+      { label: "Configure traffic & targeting", prompt: "Configure experiment traffic allocation and targeting rules" },
+      { label: "Prepare launch checklist", prompt: "Prepare a pre-launch checklist for the experiment" },
+      { label: "Launch experiment", prompt: "Launch the experiment when ready" },
+    ],
+  };
+
+  const suggestions = stageToSuggestions[stage] || stageToSuggestions.welcome;
+
+  // Simple scroll-aware visibility (no debounce, basic direction check)
+  const [isVisible, setIsVisible] = useState(true);
+  const lastTopRef = useRef(0);
+
+  useEffect(() => {
+    const viewport = document.querySelector<HTMLDivElement>('[data-aui="thread-viewport"]');
+    if (!viewport) return;
+
+    const onScroll = () => {
+      const cur = viewport.scrollTop;
+      const last = lastTopRef.current;
+      if (Math.abs(cur - last) < 2) return;
+      // up => hide, down => show
+      setIsVisible(cur >= last);
+      lastTopRef.current = cur;
+    };
+
+    viewport.addEventListener('scroll', onScroll, { passive: true } as any);
+    return () => viewport.removeEventListener('scroll', onScroll as any);
+  }, []);
+
+  return (
+    // aui-composer-inline-suggestions
+    <div className="pointer-events-none absolute bottom-full left-0 right-0 mb-3 px-2">
+      {/* Not running: toggle between row and centered button with wait mode to prevent overlap */}
+      <ThreadPrimitive.If running={false}>
+        <AnimatePresence initial={false} mode="wait">
+          {isVisible ? (
+            <motion.div
+              key="row"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: "easeInOut" }}
+              className="flex flex-wrap items-center justify-start gap-2"
+            >
+              {suggestions.slice(0, 3).map((s, i) => (
+                <div className="pointer-events-auto" key={`composer-suggestion-${i}`}>
+                  <ThreadPrimitive.Suggestion
+                    prompt={s.prompt}
+                    method="replace"
+                    autoSend
+                    asChild
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full border border-gray-200/70 bg-white/70 text-gray-800 shadow-xs hover:bg-black hover:text-white dark:border-gray-700/60 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-white dark:hover:text-black transition-all backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm ease-in-out duration-300"
+                    >
+                      {s.label}
+                    </Button>
+                  </ThreadPrimitive.Suggestion>
+                </div>
+              ))}
+              <div className="pointer-events-auto">
+                <ThreadScrollToBottom inline />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: "easeInOut" }}
+              className="flex items-center justify-center"
+            >
+              <div className="pointer-events-auto">
+                <ThreadScrollToBottom inline />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </ThreadPrimitive.If>
+
+      {/* Running: always show centered scroll button. Separate presence with wait to avoid overlap transitions */}
+      <ThreadPrimitive.If running>
+        <AnimatePresence initial={false} mode="wait">
+          <motion.div
+            key="center-running"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeInOut" }}
+            className="flex items-center justify-center"
+          >
+            <div className="pointer-events-auto">
+              <ThreadScrollToBottom inline />
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </ThreadPrimitive.If>
+    </div>
+  );
+};
+
 const Composer: FC = () => {
   // Loading state is now managed by assistant-ui primitives
 
   return (
     // aui-composer-wrapper
     <div className="bg-background relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-4 px-[var(--thread-padding-x)] pb-4 md:pb-6">
-      <ThreadScrollToBottom />
+      {/* removed: separate floating scroll button; now shown inline with suggestions */}
       <ThreadPrimitive.Empty>
         <ThreadWelcomeSuggestions />
       </ThreadPrimitive.Empty>
       {/* aui-composer-root */}
       <ComposerPrimitive.Root className="relative flex w-full items-center rounded-2xl bg-gray-100 border border-gray-200 focus-within:ring-1 focus-within:ring-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:focus-within:ring-gray-600">
+        <ComposerSuggestions />
         {/* aui-composer-input */}
         <ComposerPrimitive.Input
           placeholder="Send a message..."
@@ -200,7 +347,7 @@ const ComposerAction: FC = () => {
           <button
             type="submit"
             // aui-composer-send
-            className="bg-black hover:bg-gray-800 text-white size-9 rounded-full border-0 flex items-center justify-center transition-colors shadow-lg hover:shadow-xl"
+            className="bg-black hover:bg-gray-800 text-white size-9 rounded-full border-0 flex items-center justify-center transition-colors shadow-lg hover:shadow-xl disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed data-[disabled]:opacity-40 data-[disabled]:bg-gray-300 data-[disabled]:text-gray-600 data-[disabled]:cursor-not-allowed dark:data-[disabled]:bg-gray-700 dark:disabled:bg-gray-700"
             aria-label="Send message"
           >
             {/* aui-composer-send-icon */}
@@ -249,11 +396,15 @@ const AssistantMessage: FC = () => {
         data-role="assistant"
       >
         {/* aui-assistant-message-avatar */}
-        <div className="ring-border bg-background col-start-1 row-start-1 flex size-8 shrink-0 items-center justify-center rounded-full ring-1 overflow-hidden">
-          <img 
-            src="/assets/logo.png" 
-            alt="Agent avatar" 
-            className="w-full h-full object-cover"
+        <div className="ring-border bg-background col-start-1 row-start-1 flex size-8 shrink-0 items-center justify-center rounded-full ring-1 overflow-hidden relative">
+          <NextImage
+            src="/assets/logo_small.png"
+            alt="Agent avatar"
+            width={128}
+            height={128}
+            sizes="128px"
+            className="object-contain"
+            priority={false}
           />
         </div>
 
@@ -366,7 +517,7 @@ const EditComposer: FC = () => {
             </Button>
           </ComposerPrimitive.Cancel>
           <ComposerPrimitive.Send asChild>
-            <Button size="sm" aria-label="Update message">
+          <Button size="sm" aria-label="Update message" className="data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed">
               Update
             </Button>
           </ComposerPrimitive.Send>

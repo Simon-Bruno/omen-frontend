@@ -95,6 +95,45 @@ export interface JobResult {
   result: any;
 }
 
+// Brand Analysis Types
+export interface BrandTraitScore {
+  score: number;
+  explanation: string;
+}
+
+export interface BrandTraitScores {
+  premium: BrandTraitScore;
+  energetic: BrandTraitScore;
+  innovator: BrandTraitScore;
+  social_proof: BrandTraitScore;
+  curated: BrandTraitScore;
+  serious: BrandTraitScore;
+  brand_personality_words?: string[];
+}
+
+export interface BrandColor {
+  color: string;
+  hex_code: string;
+  usage_type: string;
+  description: string;
+}
+
+export interface BrandAnalysisResponse {
+  brand_description: string;
+  brand_personality_words: string[];
+  brand_trait_scores: BrandTraitScores;
+  brand_colors: BrandColor[];
+  smartscrape_prompt: string | null;
+  shouldUseSmartscrape: boolean;
+  smartscrape_reasoning: string | null;
+}
+
+export interface BrandAnalysisFunctionCallResponse {
+  success: boolean;
+  data: BrandAnalysisResponse | null;
+  message: string;
+}
+
 // API Configuration
 export interface ChatApiConfig {
   baseUrl: string;

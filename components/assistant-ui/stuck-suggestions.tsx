@@ -11,7 +11,6 @@ interface StuckSuggestionsProps {
 
 const SUGGESTIONS = [
   "I’m not sure what to ask. Can you suggest next steps?",
-  "Write a prompt I can use to move this forward.",
   "Summarize what’s happening and what you need from me.",
 ];
 
