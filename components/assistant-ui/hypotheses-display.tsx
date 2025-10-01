@@ -172,7 +172,7 @@ export const HypothesesDisplay = (props: any) => {
                       </div>
                       <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200">
                         <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-slate-900">
-                          {primaryHypothesis?.baseline_performance ? `${(primaryHypothesis.baseline_performance * 100).toFixed(1)}%` : "N/A"}
+                          {primaryHypothesis?.baseline_performance ? `${(primaryHypothesis.baseline_performance).toFixed(1)}%` : "N/A"}
                         </div>
                         <div className="mt-2 text-sm text-slate-500">Current performance</div>
                       </div>
