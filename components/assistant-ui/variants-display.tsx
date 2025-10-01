@@ -309,7 +309,7 @@ export const VariantsDisplay = (props: any) => {
                   <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
                     <div className="text-center">
                       <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
-                      {/* <p className="text-sm text-gray-600">{variant.description}</p> */}
+                      <p className="text-sm text-gray-600">{variant.description}</p>
                     </div>
                   </div>
                 )}
@@ -330,9 +330,9 @@ export const VariantsDisplay = (props: any) => {
                       )} */}
                     </div>
                     
-                    {/* <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                       {variant.description}
-                    </p> */}
+                    </p>
 
                     {/* {variant.screenshot && (
                       <div className="mb-3">
@@ -349,7 +349,7 @@ export const VariantsDisplay = (props: any) => {
                         {variant.isPlaceholder ? (
                           <>
                             <Clock className="w-3 h-3" />
-                            {variant.isCompleted ? 'Processing...' : variant.isFailed ? 'Failed' : 'Generating...'}
+                            {variant.isCompleted ? 'Processing...' : variant.isFailed ? 'Failed' : `Generating... ${variant.progress}%`}
                           </>
                         ) : (
                           <>
