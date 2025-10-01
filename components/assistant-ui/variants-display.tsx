@@ -163,7 +163,7 @@ export const VariantsDisplay = (props: any) => {
   // Handle function call running state
   if (status.type === "running") {
     return (
-      <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 py-4">
+      <div data-stage="variants" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 py-4">
         <div className="flex items-center gap-3 px-4">
           <div className="relative">
             <Sparkles className="size-5 animate-pulse text-blue-600" />
@@ -190,7 +190,7 @@ export const VariantsDisplay = (props: any) => {
   // Handle function call incomplete state
   if (status.type === "incomplete") {
     return (
-      <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-red-200 bg-red-50 py-3">
+      <div data-stage="variants" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-red-200 bg-red-50 py-3">
         <div className="flex items-center gap-2 px-4">
           <AlertCircle className="size-4 text-red-600" />
           <p className="text-red-800 font-medium">
@@ -274,7 +274,7 @@ export const VariantsDisplay = (props: any) => {
 
     return (
       <>
-        <div className="mb-4 w-full">
+        <div data-stage="variants" className="mb-4 mt-2 w-full">
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {loadingVariants.map((variant, index) => (
               <div
@@ -310,21 +310,21 @@ export const VariantsDisplay = (props: any) => {
                       <h3 className="font-semibold text-gray-900 text-sm">
                         {variant.variant_label}
                       </h3>
-                      {!variant.isPlaceholder && variant.screenshot && (
+                      {/* {!variant.isPlaceholder && variant.screenshot && (
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                             <div className="w-3 h-3 bg-green-600 rounded-full"></div>
                           </div>
                           <Eye className="w-4 h-4 text-gray-400" />
                         </div>
-                      )}
+                      )} */}
                     </div>
                     
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                       {variant.description}
                     </p>
 
-                    {variant.screenshot && (
+                    {/* {variant.screenshot && (
                       <div className="mb-3">
                         <ScreenshotImage
                           screenshotPath={variant.screenshot}
@@ -332,7 +332,7 @@ export const VariantsDisplay = (props: any) => {
                           className="w-full h-32 object-cover rounded border border-gray-200"
                         />
                       </div>
-                    )}
+                    )} */}
 
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span className="flex items-center gap-1">
@@ -397,7 +397,7 @@ export const VariantsDisplay = (props: any) => {
 
   // Fallback for any other states
   return (
-    <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-gray-200 py-3">
+    <div data-stage="variants" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-gray-200 py-3">
       <div className="flex items-center gap-2 px-4">
         <AlertCircle className="size-4 text-gray-600" />
         <p className="text-gray-800 font-medium">No variants available</p>

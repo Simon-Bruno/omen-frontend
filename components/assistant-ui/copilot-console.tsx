@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
-import { CircleDot, CheckCircle2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { CircleDot, CheckCircle2, FlaskConical, Rocket, Sparkles, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDescription } from "@/components/ui/alert";
 import { StuckSuggestions } from "@/components/assistant-ui/stuck-suggestions";
+import { useAuth } from "@/contexts/auth-context";
 
 type TimelineItem = {
   id: string;
@@ -74,6 +75,111 @@ export function CopilotConsole({
   ],
   copilotStatus = "thinking",
 }: CopilotConsoleProps) {
+  const { user } = useAuth();
+  // Track availability of checkpoints by detecting presence of corresponding sections in the thread viewport
+  const [availableStages, setAvailableStages] = useState<Record<string, boolean>>({
+    brand: false,
+    hypotheses: false,
+    variants: false,
+    launch: false,
+  });
+
+  // Simple list of checkpoints (2x2 grid)
+  const checkpoints = useMemo(
+    () => [
+      { id: "brand", label: "Brand analysis", icon: Sparkles },
+      { id: "hypotheses", label: "Hypotheses", icon: FlaskConical },
+      { id: "variants", label: "Variants", icon: Layers },
+      { id: "launch", label: "Launch", icon: Rocket },
+    ],
+    []
+  );
+
+  useEffect(() => {
+    // Determine availability by checking for elements with matching data-stage attributes
+    const computeAvailability = () => {
+      const hasBrandCard = !!document.querySelector('[data-stage="brand-analysis"]');
+      const hasHypothesesCard = !!document.querySelector('[data-stage="hypotheses"]');
+      const hasVariantsCard = !!document.querySelector('[data-stage="variants"]');
+      const hasLaunchCard = !!document.querySelector('[data-stage="launch"]');
+
+      // Brand can also be considered available if the user already has a brandAnalysis on their project
+      const brandCompletedFromProfile = Boolean(user?.project?.brandAnalysis);
+
+      setAvailableStages({
+        brand: hasBrandCard || brandCompletedFromProfile,
+        hypotheses: hasHypothesesCard,
+        variants: hasVariantsCard,
+        launch: hasLaunchCard,
+      });
+    };
+
+    computeAvailability();
+
+    // Function to attach an observer once the viewport exists
+    const attachViewportObserver = () => {
+      const viewport = document.querySelector('[data-aui="thread-viewport"]');
+      if (!viewport) return null;
+      const observer = new MutationObserver(() => {
+        computeAvailability();
+      });
+      observer.observe(viewport, { childList: true, subtree: true });
+      return observer;
+    };
+
+    // Try immediately, then retry a few times if the viewport hasn't mounted yet
+    let observer: MutationObserver | null = attachViewportObserver();
+    let retries = 0;
+    const maxRetries = 20; // ~4s with 200ms interval
+    const retryInterval = 200;
+    const intervalId = observer
+      ? null
+      : window.setInterval(() => {
+          if (!observer) {
+            observer = attachViewportObserver();
+            computeAvailability();
+            retries += 1;
+            if (observer || retries >= maxRetries) {
+              if (intervalId) window.clearInterval(intervalId);
+            }
+          }
+        }, retryInterval);
+
+    // Also recompute on visibility change (e.g., when switching tabs)
+    const onVisibilityChange = () => computeAvailability();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      if (observer) observer.disconnect();
+      if (intervalId) window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [user?.project?.brandAnalysis]);
+
+  const scrollToStage = (id: string) => {
+    let selector = "";
+    switch (id) {
+      case "brand":
+        selector = '[data-stage="brand-analysis"]';
+        break;
+      case "hypotheses":
+        selector = '[data-stage="hypotheses"]';
+        break;
+      case "variants":
+        selector = '[data-stage="variants"]';
+        break;
+      case "launch":
+        selector = '[data-stage="launch"]';
+        break;
+      default:
+        return;
+    }
+    const el = document.querySelector(selector) as HTMLElement | null;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <div className={`h-full p-6 flex flex-col ${className}`}>
       <div className="mb-1 gap-2 flex items-center">
@@ -84,58 +190,75 @@ export function CopilotConsole({
       </div>
 
       <div className="flex flex-col justify-between gap-6 flex-1 overflow-auto pr-1">
+        {/* Top section */}
         <section>
             <AlertDescription className="text-sm text-slate-700">
               {now}
             </AlertDescription>
         </section>
 
-        {/* <section>
-          <div className="mb-2 flex items-center gap-2">
-            <CircleDot className="h-4 w-4 text-slate-400" />
-            <h3 className="text-sm font-semibold text-slate-700">Next</h3>
-          </div>
-          <ul className="space-y-2">
-            {next.map((n, i) => (
-              <li
-                key={i}
-                className="rounded-md border border-gray-200 bg-white p-3 text-sm text-slate-700"
-              >
-                {n}
-              </li>
-            ))}
-          </ul>
-        </section> */}
+        {/* Bottom wrapper: Checkpoints + Timeline + Stuck */}
+        <div className="flex flex-col gap-6">
+          {/* Checkpoints */}
+          <section>
+            <div className="mb-2 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-700">Checkpoints</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {checkpoints.map(({ id, label, icon: Icon }) => {
+                const isAvailable = availableStages[id];
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => isAvailable && scrollToStage(id)}
+                    className={
+                      "flex items-center gap-2 rounded-md border p-2 text-left text-sm transition " +
+                      (isAvailable
+                        ? "border-gray-200 bg-white hover:bg-slate-50 text-slate-800"
+                        : "border-gray-100 bg-slate-50 text-slate-400 cursor-not-allowed")
+                    }
+                    aria-disabled={!isAvailable}
+                  >
+                    <Icon className={"h-4 w-4 " + (isAvailable ? "text-slate-700" : "text-slate-300")} />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-        <section>
-          <div className="mb-2 flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-slate-700">Timeline</h3>
-          </div>
-          <ul className="space-y-2">
-            {timeline.map((t) => (
-              <li key={t.id} className="flex items-center gap-2 text-sm">
-                {statusIcon(t.status)}
-                <span
-                  className={
-                    t.status === "done"
-                      ? "text-slate-700"
-                      : t.status === "active"
-                      ? "text-slate-900"
-                      : "text-slate-400"
-                  }
-                >
-                  {t.label}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+          {/* Timeline */}
+          <section>
+            <div className="mb-2 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-700">Timeline</h3>
+            </div>
+            <ul className="space-y-2">
+              {timeline.map((t) => (
+                <li key={t.id} className="flex items-center gap-2 text-sm">
+                  {statusIcon(t.status)}
+                  <span
+                    className={
+                      t.status === "done"
+                        ? "text-slate-700"
+                        : t.status === "active"
+                        ? "text-slate-900"
+                        : "text-slate-400"
+                    }
+                  >
+                    {t.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Stuck? Suggestions */}
+          <section className="border-t border-gray-200 pt-4">
+            <StuckSuggestions />
+          </section>
+        </div>
       </div>
-
-      {/* Stuck? Suggestions */}
-      <section className="mt-4 border-t border-gray-200 pt-4">
-        <StuckSuggestions />
-      </section>
     </div>
   );
 }
