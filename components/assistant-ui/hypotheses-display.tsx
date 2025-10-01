@@ -43,19 +43,12 @@ export const HypothesesDisplay = (props: any) => {
                     </filter>
                   </defs>
                   <g stroke="url(#hypoSparklesGradient)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" filter="url(#hypoSoftGlow)">
-                    {/* Flask rim and neck */}
-                    <path d="M10 2h4" />
-                    <path d="M12 2v4" />
-                    <path d="M9 6h6" />
-                    {/* Flask body */}
-                    <path d="M9 6l-5 9a7 7 0 0 0 6 5h4a7 7 0 0 0 6-5l-5-9" />
-                    {/* Liquid line */}
-                    <path d="M8.5 13h7" />
-                  </g>
-                  {/* Bubbles */}
-                  <g stroke="url(#hypoSparklesGradient)" strokeWidth="1.2" opacity="0.95">
-                    <circle cx="10" cy="11" r="0.9" />
-                    <circle cx="14" cy="15" r="0.9" />
+                    {/* Baseline */}
+                    <path d="M3.5 20.5H20.5" />
+                    {/* Bars */}
+                    <path d="M7 20.5V13.5" />
+                    <path d="M12 20.5V9.5" />
+                    <path d="M17 20.5V16.5" />
                   </g>
                 </svg>
               </div>
@@ -113,19 +106,12 @@ export const HypothesesDisplay = (props: any) => {
                         </filter>
                       </defs>
                       <g stroke="url(#hypoSparklesGradient2)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" filter="url(#hypoSoftGlow2)">
-                        {/* Flask rim and neck */}
-                        <path d="M10 2h4" />
-                        <path d="M12 2v4" />
-                        <path d="M9 6h6" />
-                        {/* Flask body */}
-                        <path d="M9 6l-5 9a7 7 0 0 0 6 5h4a7 7 0 0 0 6-5l-5-9" />
-                        {/* Liquid line */}
-                        <path d="M8.5 13h7" />
-                      </g>
-                      {/* Bubbles */}
-                      <g stroke="url(#hypoSparklesGradient2)" strokeWidth="1.2" opacity="0.95">
-                        <circle cx="10" cy="11" r="0.9" />
-                        <circle cx="14" cy="15" r="0.9" />
+                        {/* Baseline */}
+                        <path d="M3.5 20.5H20.5" />
+                        {/* Bars */}
+                        <path d="M7 20.5V13.5" />
+                        <path d="M12 20.5V9.5" />
+                        <path d="M17 20.5V16.5" />
                       </g>
                     </svg>
                   </div>
@@ -165,7 +151,7 @@ export const HypothesesDisplay = (props: any) => {
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 items-center text-center">
                       <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200 first:md:border-l-0">
-                        <div className="text-2xl md:text-3xl font-semibold leading-none tracking-tight text-slate-900">
+                        <div className="text-2xl font-semibold leading-none tracking-tight text-slate-900">
                           {primaryHypothesis?.primary_outcome || "Primary outcome"}
                         </div>
                         <div className="mt-2 text-sm text-slate-500">Primary outcome</div>
@@ -189,30 +175,30 @@ export const HypothesesDisplay = (props: any) => {
 
                     <Separator />
 
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="size-4 text-rose-600" />
-                        <span className="text-sm font-semibold text-slate-800">Current problem</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-fit mx-auto">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="size-4 text-rose-600" />
+                          <span className="text-sm font-semibold text-slate-800">Current problem</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2">
+                          <span className="text-sm text-rose-800">{primaryHypothesis?.current_problem || "No problem identified"}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2">
-                        <span className="text-sm text-rose-800">{primaryHypothesis?.current_problem || "No problem identified"}</span>
-                      </div>
-                    </div>
 
-                    <Separator />
-
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Activity className="size-4 text-emerald-600" />
-                        <span className="text-sm font-semibold text-slate-800">Why this experiment should work</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Activity className="size-4 text-emerald-600" />
+                          <span className="text-sm font-semibold text-slate-800">Why this experiment should work</span>
+                        </div>
+                        <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
+                          {primaryHypothesis?.why_it_works?.map((reason: { reason: string }, index: number) => (
+                            <li key={index}>{reason.reason}</li>
+                          )) || (
+                            <li>No reasons provided for this hypothesis.</li>
+                          )}
+                        </ul>
                       </div>
-                      <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
-                        {primaryHypothesis?.why_it_works?.map((reason: { reason: string }, index: number) => (
-                          <li key={index}>{reason.reason}</li>
-                        )) || (
-                          <li>No reasons provided for this hypothesis.</li>
-                        )}
-                      </ul>
                     </div>
                   </CardContent>
                 </motion.div>
@@ -296,14 +282,12 @@ export const HypothesesDisplay = (props: any) => {
                   </linearGradient>
                 </defs>
                 <g stroke="url(#hypoSparklesGradientIdle)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  {/* Flask rim and neck */}
-                  <path d="M10 2h4" />
-                  <path d="M12 2v4" />
-                  <path d="M9 6h6" />
-                  {/* Flask body */}
-                  <path d="M9 6l-5 9a7 7 0 0 0 6 5h4a7 7 0 0 0 6-5l-5-9" />
-                  {/* Liquid line */}
-                  <path d="M8.5 13h7" />
+                  {/* Baseline */}
+                  <path d="M3.5 20.5H20.5" />
+                  {/* Bars */}
+                  <path d="M7 20.5V13.5" />
+                  <path d="M12 20.5V9.5" />
+                  <path d="M17 20.5V16.5" />
                 </g>
               </svg>
             </div>
