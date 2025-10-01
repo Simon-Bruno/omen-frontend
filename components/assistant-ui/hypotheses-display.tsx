@@ -15,7 +15,7 @@ export const HypothesesDisplay = (props: any) => {
   // Handle the different statuses of the tool call
   if (status.type === "running") {
     return (
-      <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+      <Card data-stage="hypotheses" className="mb-4 mt-4 w-full">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export const HypothesesDisplay = (props: any) => {
         : resultData.hypothesesSchema;
 
       const hypotheses = parsedData.hypotheses || [];
-      const primaryHypothesis = hypotheses[0]?.hypothesis as string | undefined;
+      const primaryHypothesis = hypotheses[0];
 
       return (
         <>
@@ -143,7 +143,10 @@ export const HypothesesDisplay = (props: any) => {
               </div>
               <div className="max-w-3xl text-muted-foreground">
                 {primaryHypothesis ? (
-                  <span className="text-foreground/90">{primaryHypothesis}</span>
+                  <div className="space-y-2">
+                    <span className="text-foreground/90 font-semibold text-lg">{primaryHypothesis.title}</span>
+                    <p className="text-foreground/80">{primaryHypothesis.description}</p>
+                  </div>
                 ) : (
                   <span className="text-foreground/90">No hypotheses generated.</span>
                 )}
@@ -162,15 +165,24 @@ export const HypothesesDisplay = (props: any) => {
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 items-center text-center">
                       <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200 first:md:border-l-0">
-                        <div className="text-2xl md:text-3xl font-semibold leading-none tracking-tight text-slate-900">Checkout conversion</div>
+                        <div className="text-2xl md:text-3xl font-semibold leading-none tracking-tight text-slate-900">
+                          {primaryHypothesis?.primary_outcome || "Primary outcome"}
+                        </div>
                         <div className="mt-2 text-sm text-slate-500">Primary outcome</div>
                       </div>
                       <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200">
-                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-slate-900">2.4%</div>
-                        <div className="mt-2 text-sm text-slate-500">Current conversion</div>
+                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-slate-900">
+                          {primaryHypothesis?.baseline_performance ? `${(primaryHypothesis.baseline_performance * 100).toFixed(1)}%` : "N/A"}
+                        </div>
+                        <div className="mt-2 text-sm text-slate-500">Current performance</div>
                       </div>
                       <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200">
-                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-green-600">+3–6%</div>
+                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-green-600">
+                          {primaryHypothesis?.predicted_lift_range ? 
+                            `+${Math.round(primaryHypothesis.predicted_lift_range.min * 100)}–${Math.round(primaryHypothesis.predicted_lift_range.max * 100)}%` : 
+                            "N/A"
+                          }
+                        </div>
                         <div className="mt-2 text-sm text-slate-500">Expected increase</div>
                       </div>
                     </div>
@@ -180,11 +192,10 @@ export const HypothesesDisplay = (props: any) => {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="size-4 text-rose-600" />
-                        <span className="text-sm font-semibold text-slate-800">Bottleneck identified</span>
+                        <span className="text-sm font-semibold text-slate-800">Current problem</span>
                       </div>
                       <div className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2">
-                        <span className="text-sm text-rose-800">Checkout start → Payment</span>
-                        <Badge className="bg-rose-600 hover:bg-rose-600">−14% drop-off</Badge>
+                        <span className="text-sm text-rose-800">{primaryHypothesis?.current_problem || "No problem identified"}</span>
                       </div>
                     </div>
 
@@ -196,10 +207,11 @@ export const HypothesesDisplay = (props: any) => {
                         <span className="text-sm font-semibold text-slate-800">Why this experiment should work</span>
                       </div>
                       <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
-                        <li>Quant: Heatmaps show 32% hover on trust badges but low visibility above the fold.</li>
-                        <li>Qual: Session replays reveal confusion on shipping costs at checkout.</li>
-                        <li>Copy insight: "Free returns" phrasing increased CTR +8% in past campaigns.</li>
-                        <li>User quote: “I wasn’t sure if shipping was included until the last step.”</li>
+                        {primaryHypothesis?.why_it_works?.map((reason: { reason: string }, index: number) => (
+                          <li key={index}>{reason.reason}</li>
+                        )) || (
+                          <li>No reasons provided for this hypothesis.</li>
+                        )}
                       </ul>
                     </div>
                   </CardContent>
