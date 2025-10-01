@@ -73,11 +73,19 @@ export const VariantsDisplay = (props: any) => {
     );
   };
 
-  // Handle variant click - simple and clean
-  const handleVariantClick = (variant: Variant) => {
-    console.log('🖱️ Variant clicked:', variant.variant_label);
-    setSelectedVariant(variant);
-    setIsModalOpen(true);
+  // Handle variant click - open preview in new tab
+  const handleVariantClick = (variant: Variant, jobId?: string) => {
+    console.log('🖱️ Variant clicked:', variant.variant_label, 'jobId:', jobId);
+    
+    if (jobId) {
+      // Open preview URL in new tab
+      const previewUrl = `https://omen-mvp.myshopify.com/?preview=true&jobId=${jobId}`;
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      // Fallback to modal for variants without jobId
+      setSelectedVariant(variant);
+      setIsModalOpen(true);
+    }
   };
 
   // Close modal
@@ -290,7 +298,9 @@ export const VariantsDisplay = (props: any) => {
                 } ${(variant.isPlaceholder && !variant.isCompleted) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 onClick={() => {
                   if (!variant.isPlaceholder || variant.isCompleted) {
-                    handleVariantClick(variant);
+                    // Find the jobId for this variant (it's the index in the jobIds array)
+                    const jobId = jobIds[index];
+                    handleVariantClick(variant, jobId);
                   }
                 }}
               >
@@ -344,7 +354,7 @@ export const VariantsDisplay = (props: any) => {
                         ) : (
                           <>
                             <CheckCircle className="w-3 h-3 text-green-600" />
-                            Ready
+                            Click to preview
                           </>
                         )}
                       </span>
