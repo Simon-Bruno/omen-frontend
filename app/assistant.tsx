@@ -5,6 +5,7 @@ import { Thread } from "@/components/assistant-ui/thread";
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import { AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 import { useEffect, useRef, useState } from "react";
+import { VariantJobsProvider } from "@/contexts/variant-jobs-context";
 
 const AssistantWithWelcome = ({ runtime }: { runtime: any }) => {
   const [isWelcomeMessageLoaded, setIsWelcomeMessageLoaded] = useState(false);
@@ -67,8 +68,10 @@ export const Assistant = () => {
   });
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <AssistantWithWelcome runtime={runtime} />
-    </AssistantRuntimeProvider>
+    <VariantJobsProvider>
+      <AssistantRuntimeProvider runtime={runtime}>
+        <AssistantWithWelcome runtime={runtime} />
+      </AssistantRuntimeProvider>
+    </VariantJobsProvider>
   );
 };

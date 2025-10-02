@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { MarkdownText } from "./markdown-text";
 import { ToolFallback } from "./tool-fallback";
 import { toolUIs } from "./tool-registry";
+import { useVariantJobs } from "@/contexts/variant-jobs-context";
 
 export const Thread: FC = () => {
 
@@ -125,6 +126,8 @@ const ThreadWelcome: FC = () => {
 };
 
 const ThreadWelcomeSuggestions: FC = () => {
+  const { hasRunningVariantJobs } = useVariantJobs();
+  
   return (
     // aui-thread-welcome-suggestions
     <div className="grid w-full gap-2 sm:grid-cols-2">
@@ -142,7 +145,7 @@ const ThreadWelcomeSuggestions: FC = () => {
           transition={{ delay: 0.05 * index }}
           key={`suggested-action-${suggestedAction.title}-${index}`}
           // aui-thread-welcome-suggestion-display
-          className="[&:nth-child(n+3)]:hidden sm:[&:nth-child(n+3)]:block"
+          className={`[&:nth-child(n+3)]:hidden sm:[&:nth-child(n+3)]:block ${hasRunningVariantJobs ? 'pointer-events-none' : ''}`}
         >
           <ThreadPrimitive.Suggestion
             prompt={suggestedAction.action}
@@ -152,9 +155,11 @@ const ThreadWelcomeSuggestions: FC = () => {
           >
             <Button
               variant="ghost"
+              disabled={hasRunningVariantJobs}
               // aui-thread-welcome-suggestion
-              className="dark:hover:bg-accent/60 h-auto w-full flex-1 flex-wrap items-start justify-start gap-1 rounded-xl border px-4 py-3.5 text-left text-sm sm:flex-col"
-              aria-label={suggestedAction.action}
+              className="dark:hover:bg-accent/60 h-auto w-full flex-1 flex-wrap items-start justify-start gap-1 rounded-xl border px-4 py-3.5 text-left text-sm sm:flex-col disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
+              aria-label={hasRunningVariantJobs ? "Please wait for variant creation to complete" : suggestedAction.action}
+              title={hasRunningVariantJobs ? "Please wait for variant creation to complete" : suggestedAction.action}
             >
               {/* aui-thread-welcome-suggestion-text-1 */}
               <span className="font-medium">{suggestedAction.title}</span>
@@ -172,6 +177,9 @@ const ComposerSuggestions: FC = () => {
   // Detect current stage by checking rendered tool cards in the viewport
   // Priority order reflects the funnel: brand-analysis -> hypotheses -> variants -> experiment-creation
   const [stage, setStage] = useState<"brand-analysis" | "hypotheses" | "variants" | "experiment-preview" | "experiment-creation" | "welcome">("welcome");
+  
+  // Check for running variant jobs
+  const { hasRunningVariantJobs } = useVariantJobs();
 
   const detectStage = () => {
     if (typeof window === "undefined") return;
@@ -354,7 +362,7 @@ const ComposerSuggestions: FC = () => {
               className="flex flex-wrap items-center justify-start gap-2"
             >
               {suggestions.slice(0, 3).map((s, i) => (
-                <div className="pointer-events-auto" key={`composer-suggestion-${i}`}>
+                <div className={hasRunningVariantJobs ? "pointer-events-none" : "pointer-events-auto"} key={`composer-suggestion-${i}`}>
                   <ThreadPrimitive.Suggestion
                     prompt={s.prompt}
                     method="replace"
@@ -364,7 +372,9 @@ const ComposerSuggestions: FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="rounded-full border border-gray-200/70 bg-white/70 text-gray-800 shadow-xs hover:bg-black hover:text-white dark:border-gray-700/60 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-white dark:hover:text-black transition-all backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm ease-in-out duration-300"
+                      disabled={hasRunningVariantJobs}
+                      className="rounded-full border border-gray-200/70 bg-white/70 text-gray-800 shadow-xs hover:bg-black hover:text-white dark:border-gray-700/60 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-white dark:hover:text-black transition-all backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm ease-in-out duration-300 disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
+                      title={hasRunningVariantJobs ? "Please wait for variant creation to complete" : s.label}
                     >
                       {s.label}
                     </Button>
@@ -442,6 +452,7 @@ const Composer: FC = () => {
 
 const ComposerAction: FC = () => {
   // Loading state is now managed by assistant-ui primitives
+  const { hasRunningVariantJobs } = useVariantJobs();
 
   return (
     // aui-composer-action-wrapper
@@ -450,9 +461,11 @@ const ComposerAction: FC = () => {
         <ComposerPrimitive.Send asChild>
           <button
             type="submit"
+            disabled={hasRunningVariantJobs}
             // aui-composer-send
             className="bg-black hover:bg-gray-800 text-white size-9 rounded-full border-0 flex items-center justify-center transition-colors shadow-lg hover:shadow-xl disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed data-[disabled]:opacity-40 data-[disabled]:bg-gray-300 data-[disabled]:text-gray-600 data-[disabled]:cursor-not-allowed dark:data-[disabled]:bg-gray-700 dark:disabled:bg-gray-700"
-            aria-label="Send message"
+            aria-label={hasRunningVariantJobs ? "Variant creation in progress..." : "Send message"}
+            title={hasRunningVariantJobs ? "Please wait for variant creation to complete" : "Send message"}
           >
             {/* aui-composer-send-icon */}
             <ArrowUpIcon className="size-4" />
