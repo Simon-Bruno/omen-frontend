@@ -83,7 +83,7 @@ export default function Header() {
                     </div>
 
                     {/* Right side - Settings Dropdown */}
-                    {isAuthenticated && project && (
+                    {isAuthenticated && project && project.brandAnalysis && (
                         <div className="relative" ref={dropdownRef}>
                             <Button
                                 variant="outline"
