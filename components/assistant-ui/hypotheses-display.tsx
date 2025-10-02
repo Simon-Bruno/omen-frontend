@@ -15,7 +15,7 @@ export const HypothesesDisplay = (props: any) => {
   // Handle the different statuses of the tool call
   if (status.type === "running") {
     return (
-      <Card data-stage="hypotheses" className="mb-4 mt-4 w-full">
+      <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-4 w-full">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ export const HypothesesDisplay = (props: any) => {
 
       return (
         <>
-          <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+          <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -210,7 +210,7 @@ export const HypothesesDisplay = (props: any) => {
     } catch (e) {
       console.error("Failed to parse hypotheses JSON:", e);
       return (
-        <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+        <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
           <CardHeader className="gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export const HypothesesDisplay = (props: any) => {
   // Handle incomplete status (error, abort, timeout, etc.)
   if (status.type === "incomplete") {
     return (
-      <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+      <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
         <CardHeader className="gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export const HypothesesDisplay = (props: any) => {
 
   // Fallback for any other states
   return (
-    <Card data-stage="hypotheses" className="mb-4 mt-2 w-full">
+    <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

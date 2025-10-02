@@ -59,20 +59,13 @@ export function CopilotConsole({
   now = "We're currently working on creating test variants tailored to your brand and traffic.",
   next = [
     "Configure experiment traffic and targeting",
-    "Run automated QA checks",
     "Prepare launch checklist",
   ],
   needs = [
     "Confirm brand tone preference",
     "Approve product set for this experiment",
   ],
-  timeline = [
-    { id: "store", label: "Store connected", status: "done" },
-    { id: "brand", label: "Brand analysis", status: "done" },
-    { id: "variants", label: "Variant creation", status: "active" },
-    { id: "config", label: "Experiment config", status: "pending" },
-    { id: "qa", label: "QA checks", status: "pending" },
-  ],
+  timeline = [],
   copilotStatus = "thinking",
 }: CopilotConsoleProps) {
   const { user } = useAuth();
@@ -83,6 +76,27 @@ export function CopilotConsole({
     variants: false,
     launch: false,
   });
+
+
+  // Compute timeline dynamically based on available stages
+  const computedTimeline = useMemo(() => {
+    const timelineItems: TimelineItem[] = [
+      { id: "store", label: "Store connected", status: "done" }, // Always done if user is authenticated
+      { id: "brand", label: "Brand analysis", status: availableStages.brand ? "done" : "pending" },
+      { id: "hypotheses", label: "Hypothesis generation", status: availableStages.hypotheses ? "done" : "pending" },
+      { id: "variants", label: "Variant creation", status: availableStages.variants ? "done" : "pending" },
+      { id: "config", label: "Experiment config", status: availableStages.launch ? "done" : "pending" },
+    ];
+
+    // Find the first pending stage and mark it as active
+    const firstPendingIndex = timelineItems.findIndex(item => item.status === "pending");
+    if (firstPendingIndex !== -1) {
+      timelineItems[firstPendingIndex] = { ...timelineItems[firstPendingIndex], status: "active" };
+    }
+
+    return timelineItems;
+  }, [availableStages]);
+
 
   // Simple list of checkpoints (2x2 grid)
   const checkpoints = useMemo(
@@ -103,11 +117,8 @@ export function CopilotConsole({
       const hasVariantsCard = !!document.querySelector('[data-stage="variants"]');
       const hasLaunchCard = !!document.querySelector('[data-stage="launch"]');
 
-      // Brand can also be considered available if the user already has a brandAnalysis on their project
-      const brandCompletedFromProfile = Boolean(user?.project?.brandAnalysis);
-
       setAvailableStages({
-        brand: hasBrandCard || brandCompletedFromProfile,
+        brand: hasBrandCard,
         hypotheses: hasHypothesesCard,
         variants: hasVariantsCard,
         launch: hasLaunchCard,
@@ -154,7 +165,8 @@ export function CopilotConsole({
       if (intervalId) window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [user?.project?.brandAnalysis]);
+  }, []);
+
 
   const scrollToStage = (id: string) => {
     let selector = "";
@@ -174,10 +186,32 @@ export function CopilotConsole({
       default:
         return;
     }
+    
+    // Find the target element
     const el = document.querySelector(selector) as HTMLElement | null;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (!el) return;
+    
+    // Find the chat container's scrollable viewport
+    const chatViewport = document.querySelector('[data-aui="thread-viewport"]') as HTMLElement | null;
+    if (!chatViewport) return;
+    
+    // Calculate the position of the target element relative to the viewport
+    const viewportRect = chatViewport.getBoundingClientRect();
+    const elementRect = el.getBoundingClientRect();
+    
+    // Calculate the scroll position needed to center the element in the viewport
+    const elementTop = elementRect.top - viewportRect.top + chatViewport.scrollTop;
+    const elementHeight = elementRect.height;
+    const viewportHeight = chatViewport.clientHeight;
+    
+    // Center the element in the viewport
+    const scrollTop = elementTop - (viewportHeight / 2) + (elementHeight / 2);
+    
+    // Smooth scroll within the chat container
+    chatViewport.scrollTo({
+      top: scrollTop,
+      behavior: 'smooth'
+    });
   };
 
   return (
@@ -234,7 +268,7 @@ export function CopilotConsole({
               <h3 className="text-sm font-semibold text-slate-700">Timeline</h3>
             </div>
             <ul className="space-y-2">
-              {timeline.map((t) => (
+              {computedTimeline.map((t) => (
                 <li key={t.id} className="flex items-center gap-2 text-sm">
                   {statusIcon(t.status)}
                   <span

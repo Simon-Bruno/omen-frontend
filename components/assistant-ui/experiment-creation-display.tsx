@@ -7,7 +7,7 @@ export const ExperimentCreationDisplay = (props: any) => {
     // Handle the different statuses of the tool call
     if (status.type === "running") {
         return (
-            <div data-stage="experiment-creation" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 py-4">
+            <div data-stage="experiment-creation" data-function-call="create_experiment" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 py-4">
                 <div className="flex items-center gap-3 px-4">
                     <div className="relative">
                         <Beaker className="size-5 animate-pulse text-blue-600" />
@@ -44,7 +44,7 @@ export const ExperimentCreationDisplay = (props: any) => {
                 : "Your Experiment";
 
             return (
-                <div data-stage="experiment-creation" className="mb-4 w-full">
+                <div data-stage="experiment-creation" data-function-call="create_experiment" className="mb-4 w-full">
                     <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-green-200 bg-green-50">
                         <CheckCircle className="size-4 text-green-600" />
                         <p className="text-green-800 font-medium">
@@ -77,7 +77,7 @@ export const ExperimentCreationDisplay = (props: any) => {
     // Handle incomplete status (error, abort, timeout, etc.)
     if (status.type === "incomplete") {
         return (
-            <div data-stage="experiment-creation" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-red-200 bg-red-50 py-3">
+            <div data-stage="experiment-creation" data-function-call="create_experiment" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-red-200 bg-red-50 py-3">
                 <div className="flex items-center gap-2 px-4">
                     <AlertCircle className="size-4 text-red-600" />
                     <p className="text-red-800 font-medium">
@@ -97,7 +97,7 @@ export const ExperimentCreationDisplay = (props: any) => {
 
     // Fallback for any other states
     return (
-        <div data-stage="experiment-creation" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-gray-200 py-3">
+        <div data-stage="experiment-creation" data-function-call="create_experiment" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-gray-200 py-3">
             <div className="flex items-center gap-2 px-4">
                 <AlertCircle className="size-4 text-gray-500" />
                 <p className="text-gray-700">

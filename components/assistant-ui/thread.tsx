@@ -171,20 +171,71 @@ const ThreadWelcomeSuggestions: FC = () => {
 const ComposerSuggestions: FC = () => {
   // Detect current stage by checking rendered tool cards in the viewport
   // Priority order reflects the funnel: brand-analysis -> hypotheses -> variants -> experiment-creation
-  let stage: "brand-analysis" | "hypotheses" | "variants" | "experiment-creation" | "welcome" = "welcome";
+  const [stage, setStage] = useState<"brand-analysis" | "hypotheses" | "variants" | "experiment-creation" | "welcome">("welcome");
 
-  if (typeof window !== "undefined") {
+  const detectStage = () => {
+    if (typeof window === "undefined") return;
+
     const viewport = document.querySelector('[data-aui="thread-viewport"]') || document;
+    let newStage: "brand-analysis" | "hypotheses" | "variants" | "experiment-creation" | "welcome" = "welcome";
+
+    // Check for stage elements in priority order (most recent first)
     if (viewport.querySelector('[data-stage="experiment-creation"]')) {
-      stage = "experiment-creation";
+      newStage = "experiment-creation";
     } else if (viewport.querySelector('[data-stage="variants"]')) {
-      stage = "variants";
+      newStage = "variants";
     } else if (viewport.querySelector('[data-stage="hypotheses"]')) {
-      stage = "hypotheses";
+      newStage = "hypotheses";
     } else if (viewport.querySelector('[data-stage="brand-analysis"]')) {
-      stage = "brand-analysis";
+      newStage = "brand-analysis";
+    } else {
+      // Fallback logic: Check for the last function call type that was made
+      const functionCallElements = viewport.querySelectorAll('[data-function-call]');
+      const lastFunctionCall = functionCallElements[functionCallElements.length - 1];
+
+      if (lastFunctionCall) {
+        const functionCallType = lastFunctionCall.getAttribute('data-function-call');
+        switch (functionCallType) {
+          case 'get_brand_analysis':
+            newStage = "brand-analysis";
+            break;
+          case 'generate_hypotheses':
+            newStage = "hypotheses";
+            break;
+          case 'generate_variants':
+            newStage = "variants";
+            break;
+          case 'create_experiment':
+            newStage = "experiment-creation";
+            break;
+        }
+      }
     }
-  }
+
+    setStage(newStage);
+  };
+
+  // Detect stage on mount and when function calls change
+  useEffect(() => {
+    detectStage();
+
+    // Set up a MutationObserver to watch for changes in the viewport
+    const viewport = document.querySelector('[data-aui="thread-viewport"]');
+    if (!viewport) return;
+
+    const observer = new MutationObserver(() => {
+      detectStage();
+    });
+
+    observer.observe(viewport, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-stage', 'data-function-call']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const stageToSuggestions: Record<string, { label: string; prompt: string }[]> = {
     welcome: [
@@ -196,16 +247,15 @@ const ComposerSuggestions: FC = () => {
       { label: "Show key brand insights", prompt: "Summarize the key insights from the brand analysis" },
     ],
     hypotheses: [
-      { label: "Create variants for top hypothesis", prompt: "Create variants for the top scoring hypothesis" },
-      { label: "Refine hypotheses", prompt: "Refine the hypotheses to be more specific and testable" },
+      { label: "Create variants", prompt: "Create variants for the hypothesis" },
+      { label: "Explain the key terms", prompt: "Explain the key terms in the hypothesis" },
     ],
     variants: [
       { label: "Proceed to experiment setup", prompt: "Proceed to experiment setup and configuration" },
       { label: "Explain the variants", prompt: "Explain the variants" },
     ],
     "experiment-creation": [
-      { label: "Configure traffic & targeting", prompt: "Configure experiment traffic allocation and targeting rules" },
-      { label: "Prepare launch checklist", prompt: "Prepare a pre-launch checklist for the experiment" },
+      { label: "Explain the checklist", prompt: "Explain the checklist for the experiment" },
       { label: "Launch experiment", prompt: "Launch the experiment when ready" },
     ],
   };
@@ -516,7 +566,7 @@ const EditComposer: FC = () => {
             </Button>
           </ComposerPrimitive.Cancel>
           <ComposerPrimitive.Send asChild>
-          <Button size="sm" aria-label="Update message" className="data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed">
+            <Button size="sm" aria-label="Update message" className="data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed">
               Update
             </Button>
           </ComposerPrimitive.Send>

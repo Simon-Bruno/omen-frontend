@@ -4,6 +4,8 @@ import { VariantsDisplay } from "./variants-display";
 import { BrandAnalysisDisplay } from "./brand-analysis-display";
 import { ExperimentCreationDisplay } from "./experiment-creation-display";
 import { ExperimentPreviewDisplay } from "./experiment-preview-display";
+import { BrandSourcesDisplay } from "./brand-sources-display";
+import { ProjectInfoDisplay } from "./project-info-display";
 
 export const HypothesesToolUI = makeAssistantToolUI({
     toolName: "generate_hypotheses", // This MUST match the name your agent uses
@@ -31,6 +33,18 @@ export const CheckVariantsToolUI = makeAssistantToolUI({
     render: () => null, // Return null to hide the function call message
 });
 
+// Tool UI for get_brand_sources - uses proper Card component
+export const GetBrandSourcesToolUI = makeAssistantToolUI({
+    toolName: "get_brand_sources", // This MUST match the name your agent uses
+    render: BrandSourcesDisplay,
+});
+
+// Tool UI for get_project_info - uses proper Card component
+export const GetProjectInfoToolUI = makeAssistantToolUI({
+    toolName: "get_project_info", // This MUST match the name your agent uses
+    render: ProjectInfoDisplay,
+});
+
 export const ExperimentPreviewToolUI = makeAssistantToolUI({
     toolName: "preview_experiment", // This MUST match the name your agent uses
     render: ExperimentPreviewDisplay,
@@ -42,5 +56,7 @@ export const toolUIs = [
     BrandAnalysisToolUI,
     ExperimentCreationToolUI,
     CheckVariantsToolUI,
+    GetBrandSourcesToolUI,
+    GetProjectInfoToolUI,
     ExperimentPreviewToolUI,
 ];
