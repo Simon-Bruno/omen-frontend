@@ -85,7 +85,7 @@ export function CopilotConsole({
       { id: "brand", label: "Brand analysis", status: availableStages.brand ? "done" : "pending" },
       { id: "hypotheses", label: "Hypothesis generation", status: availableStages.hypotheses ? "done" : "pending" },
       { id: "variants", label: "Variant creation", status: availableStages.variants ? "done" : "pending" },
-      { id: "config", label: "Experiment config", status: availableStages.launch ? "done" : "pending" },
+      { id: "config", label: "Experiment configured", status: availableStages.launch ? "done" : "pending" },
     ];
 
     // Find the first pending stage and mark it as active
@@ -115,7 +115,7 @@ export function CopilotConsole({
       const hasBrandCard = !!document.querySelector('[data-stage="brand-analysis"]');
       const hasHypothesesCard = !!document.querySelector('[data-stage="hypotheses"]');
       const hasVariantsCard = !!document.querySelector('[data-stage="variants"]');
-      const hasLaunchCard = !!document.querySelector('[data-stage="launch"]');
+      const hasLaunchCard = !!document.querySelector('[data-stage="experiment-creation"]');
 
       setAvailableStages({
         brand: hasBrandCard,
@@ -181,7 +181,7 @@ export function CopilotConsole({
         selector = '[data-stage="variants"]';
         break;
       case "launch":
-        selector = '[data-stage="launch"]';
+        selector = '[data-stage="experiment-creation"]';
         break;
       default:
         return;
