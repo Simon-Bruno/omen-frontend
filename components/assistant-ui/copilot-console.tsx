@@ -75,6 +75,7 @@ export function CopilotConsole({
     hypotheses: false,
     variants: false,
     launch: false,
+    launched: false,
   });
 
 
@@ -86,6 +87,7 @@ export function CopilotConsole({
       { id: "hypotheses", label: "Hypothesis generation", status: availableStages.hypotheses ? "done" : "pending" },
       { id: "variants", label: "Variant creation", status: availableStages.variants ? "done" : "pending" },
       { id: "config", label: "Experiment configured", status: availableStages.launch ? "done" : "pending" },
+      { id: "launched", label: "Experiment launched", status: availableStages.launched ? "done" : "pending" },
     ];
 
     // Find the first pending stage and mark it as active
@@ -115,13 +117,18 @@ export function CopilotConsole({
       const hasBrandCard = !!document.querySelector('[data-stage="brand-analysis"]');
       const hasHypothesesCard = !!document.querySelector('[data-stage="hypotheses"]');
       const hasVariantsCard = !!document.querySelector('[data-stage="variants"]');
-      const hasLaunchCard = !!document.querySelector('[data-stage="experiment-creation"]');
+      const hasLaunchCard = !!document.querySelector('[data-stage="experiment-preview"]') || 
+                            !!document.querySelector('[data-function-call="preview_experiment"]');
+      const hasLaunchedCard = !!document.querySelector('[data-stage="experiment-launched"]') || 
+                              !!document.querySelector('[data-function-call="launch_experiment"]') ||
+                              !!document.querySelector('[data-function-call="create_experiment"]');
 
       setAvailableStages({
         brand: hasBrandCard,
         hypotheses: hasHypothesesCard,
         variants: hasVariantsCard,
         launch: hasLaunchCard,
+        launched: hasLaunchedCard,
       });
     };
 
@@ -146,15 +153,15 @@ export function CopilotConsole({
     const intervalId = observer
       ? null
       : window.setInterval(() => {
-          if (!observer) {
-            observer = attachViewportObserver();
-            computeAvailability();
-            retries += 1;
-            if (observer || retries >= maxRetries) {
-              if (intervalId) window.clearInterval(intervalId);
-            }
+        if (!observer) {
+          observer = attachViewportObserver();
+          computeAvailability();
+          retries += 1;
+          if (observer || retries >= maxRetries) {
+            if (intervalId) window.clearInterval(intervalId);
           }
-        }, retryInterval);
+        }
+      }, retryInterval);
 
     // Also recompute on visibility change (e.g., when switching tabs)
     const onVisibilityChange = () => computeAvailability();
@@ -181,32 +188,35 @@ export function CopilotConsole({
         selector = '[data-stage="variants"]';
         break;
       case "launch":
-        selector = '[data-stage="experiment-creation"]';
+        selector = '[data-stage="experiment-preview"], [data-function-call="preview_experiment"]';
+        break;
+      case "launched":
+        selector = '[data-stage="experiment-launched"], [data-function-call="launch_experiment"]';
         break;
       default:
         return;
     }
-    
+
     // Find the target element
     const el = document.querySelector(selector) as HTMLElement | null;
     if (!el) return;
-    
+
     // Find the chat container's scrollable viewport
     const chatViewport = document.querySelector('[data-aui="thread-viewport"]') as HTMLElement | null;
     if (!chatViewport) return;
-    
+
     // Calculate the position of the target element relative to the viewport
     const viewportRect = chatViewport.getBoundingClientRect();
     const elementRect = el.getBoundingClientRect();
-    
+
     // Calculate the scroll position needed to center the element in the viewport
     const elementTop = elementRect.top - viewportRect.top + chatViewport.scrollTop;
     const elementHeight = elementRect.height;
     const viewportHeight = chatViewport.clientHeight;
-    
+
     // Center the element in the viewport
     const scrollTop = elementTop - (viewportHeight / 2) + (elementHeight / 2);
-    
+
     // Smooth scroll within the chat container
     chatViewport.scrollTo({
       top: scrollTop,
@@ -226,9 +236,9 @@ export function CopilotConsole({
       <div className="flex flex-col justify-between gap-6 flex-1 overflow-auto pr-1">
         {/* Top section */}
         <section>
-            <AlertDescription className="text-sm text-slate-700">
-              {now}
-            </AlertDescription>
+          <AlertDescription className="text-sm text-slate-700">
+            {now}
+          </AlertDescription>
         </section>
 
         {/* Bottom wrapper: Checkpoints + Timeline + Stuck */}
@@ -276,8 +286,8 @@ export function CopilotConsole({
                       t.status === "done"
                         ? "text-slate-700"
                         : t.status === "active"
-                        ? "text-slate-900"
-                        : "text-slate-400"
+                          ? "text-slate-900"
+                          : "text-slate-400"
                     }
                   >
                     {t.label}

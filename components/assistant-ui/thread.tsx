@@ -171,17 +171,19 @@ const ThreadWelcomeSuggestions: FC = () => {
 const ComposerSuggestions: FC = () => {
   // Detect current stage by checking rendered tool cards in the viewport
   // Priority order reflects the funnel: brand-analysis -> hypotheses -> variants -> experiment-creation
-  const [stage, setStage] = useState<"brand-analysis" | "hypotheses" | "variants" | "experiment-creation" | "welcome">("welcome");
+  const [stage, setStage] = useState<"brand-analysis" | "hypotheses" | "variants" | "experiment-preview" | "experiment-creation" | "welcome">("welcome");
 
   const detectStage = () => {
     if (typeof window === "undefined") return;
 
     const viewport = document.querySelector('[data-aui="thread-viewport"]') || document;
-    let newStage: "brand-analysis" | "hypotheses" | "variants" | "experiment-creation" | "welcome" = "welcome";
+    let newStage: "brand-analysis" | "hypotheses" | "variants" | "experiment-preview" | "experiment-creation" | "welcome" = "welcome";
 
     // Check for stage elements in priority order (most recent first)
     if (viewport.querySelector('[data-stage="experiment-creation"]')) {
       newStage = "experiment-creation";
+    } else if (viewport.querySelector('[data-stage="experiment-preview"]')) {
+      newStage = "experiment-preview";
     } else if (viewport.querySelector('[data-stage="variants"]')) {
       newStage = "variants";
     } else if (viewport.querySelector('[data-stage="hypotheses"]')) {
@@ -204,6 +206,9 @@ const ComposerSuggestions: FC = () => {
             break;
           case 'generate_variants':
             newStage = "variants";
+            break;
+          case 'preview_experiment':
+            newStage = "experiment-preview";
             break;
           case 'create_experiment':
             newStage = "experiment-creation";
@@ -251,36 +256,86 @@ const ComposerSuggestions: FC = () => {
       { label: "Explain the key terms", prompt: "Explain the key terms in the hypothesis" },
     ],
     variants: [
-      { label: "Proceed to experiment setup", prompt: "Proceed to experiment setup and configuration" },
+      { label: "Show the final experiment overview", prompt: "Show the final experiment overview" },
       { label: "Explain the variants", prompt: "Explain the variants" },
     ],
+    "experiment-preview": [
+      { label: "Launch experiment", prompt: "Launch the experiment!" },
+    ],
     "experiment-creation": [
-      { label: "Explain the checklist", prompt: "Explain the checklist for the experiment" },
-      { label: "Launch experiment", prompt: "Launch the experiment when ready" },
+      { label: "What more can you help me with?", prompt: "What more can you help me with?" },
     ],
   };
 
   const suggestions = stageToSuggestions[stage] || stageToSuggestions.welcome;
 
-  // Simple scroll-aware visibility (no debounce, basic direction check)
+  // Simple scroll-aware visibility with bounce detection
   const [isVisible, setIsVisible] = useState(true);
   const lastTopRef = useRef(0);
+  const bounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const wasAtBottomRef = useRef(false);
+
+  const checkVisibility = (viewport: HTMLDivElement) => {
+    const cur = viewport.scrollTop;
+    const last = lastTopRef.current;
+    const scrollHeight = viewport.scrollHeight;
+    const clientHeight = viewport.clientHeight;
+
+    const distanceFromBottom = scrollHeight - cur - clientHeight;
+    const isNearBottom = distanceFromBottom < 100;
+
+    // Clear any existing bounce timeout
+    if (bounceTimeoutRef.current) {
+      clearTimeout(bounceTimeoutRef.current);
+      bounceTimeoutRef.current = null;
+    }
+
+    // Always show suggestions when near the bottom
+    if (isNearBottom) {
+      setIsVisible(true);
+      lastTopRef.current = cur;
+      wasAtBottomRef.current = true;
+      return;
+    }
+
+    // If we were at bottom recently and moved slightly away, 
+    // wait to see if it's just a bounce effect
+    if (wasAtBottomRef.current && distanceFromBottom < 200) {
+      bounceTimeoutRef.current = setTimeout(() => {
+        const newDistance = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+        if (newDistance < 100) {
+          setIsVisible(true);
+          wasAtBottomRef.current = true;
+        } else {
+          setIsVisible(false);
+          wasAtBottomRef.current = false;
+        }
+      }, 150);
+      return;
+    }
+
+    // For positions away from bottom, show suggestions if scrolling down
+    if (Math.abs(cur - last) < 2) return;
+    setIsVisible(cur >= last);
+    lastTopRef.current = cur;
+    wasAtBottomRef.current = false;
+  };
 
   useEffect(() => {
     const viewport = document.querySelector<HTMLDivElement>('[data-aui="thread-viewport"]');
     if (!viewport) return;
 
-    const onScroll = () => {
-      const cur = viewport.scrollTop;
-      const last = lastTopRef.current;
-      if (Math.abs(cur - last) < 2) return;
-      // up => hide, down => show
-      setIsVisible(cur >= last);
-      lastTopRef.current = cur;
-    };
+    checkVisibility(viewport);
+    const onScroll = () => checkVisibility(viewport);
 
     viewport.addEventListener('scroll', onScroll, { passive: true } as any);
-    return () => viewport.removeEventListener('scroll', onScroll as any);
+
+    return () => {
+      viewport.removeEventListener('scroll', onScroll as any);
+      if (bounceTimeoutRef.current) {
+        clearTimeout(bounceTimeoutRef.current);
+      }
+    };
   }, []);
 
   return (
