@@ -350,9 +350,9 @@ export const VariantsDisplay = (props: any) => {
                       )} */}
                     </div>
                     
-                    {/* <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                       {variant.description}
-                    </p> */}
+                    </p>
 
                     {/* {variant.screenshot && (
                       <div className="mb-3">
