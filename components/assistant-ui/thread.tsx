@@ -243,7 +243,7 @@ const ComposerSuggestions: FC = () => {
       { label: "Go straight to Experiment Creation", prompt: "Let's go straight to experiment creation" },
     ],
     "brand-analysis": [
-      { label: "Generate hypotheses", prompt: "Based on the brand analysis, generate a hypothesis" },
+      { label: "Generate hypothesis", prompt: "Based on the brand analysis, generate a hypothesis" },
       { label: "Show key brand insights", prompt: "Summarize the key insights from the brand analysis" },
     ],
     hypotheses: [
