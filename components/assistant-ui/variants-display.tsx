@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Variant, JobStatus } from "@/lib/chat-types";
 import { chatApi } from "@/lib/chat-api";
 import { getScreenshotUrl } from "@/lib/utils";
+import { useVariantJobs } from "@/contexts/variant-jobs-context";
 
 export const VariantsDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
@@ -18,6 +19,9 @@ export const VariantsDisplay = (props: any) => {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isPolling, setIsPolling] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+
+  // Variant jobs context
+  const { addVariantJob, updateVariantJobStatus, removeVariantJob } = useVariantJobs();
 
   // ScreenshotImage component with error handling
   const ScreenshotImage = ({ 
@@ -108,8 +112,9 @@ export const VariantsDisplay = (props: any) => {
           const extractedProjectId = resultData.projectId || 'default-project';
           setProjectId(extractedProjectId);
           
-          // Start polling for each job
+          // Add jobs to context and start polling for each job
           resultData.jobIds.forEach((jobId: string) => {
+            addVariantJob(jobId, extractedProjectId);
             pollJobStatus(jobId, extractedProjectId);
           });
         } else if (resultData.variantsSchema) {
@@ -123,7 +128,7 @@ export const VariantsDisplay = (props: any) => {
         console.error("❌ Failed to parse result:", e);
       }
     }
-  }, [status, result, jobIds.length]);
+  }, [status, result, jobIds.length, addVariantJob, updateVariantJobStatus, removeVariantJob]);
 
   // Poll job status
   const pollJobStatus = async (jobId: string, projectId: string) => {
@@ -133,6 +138,16 @@ export const VariantsDisplay = (props: any) => {
         projectId,
         (status) => {
           setJobStatuses(prev => ({ ...prev, [jobId]: status }));
+          
+          // Update job status in context
+          updateVariantJobStatus(jobId, status.status);
+          
+          // If completed or failed, remove from context after a delay
+          if (status.status === 'completed' || status.status === 'failed') {
+            setTimeout(() => {
+              removeVariantJob(jobId);
+            }, 2000); // Keep in context for 2 seconds to show completion state
+          }
           
           // If completed, extract variant data
           if (status.status === 'completed' && status.result) {
@@ -165,6 +180,11 @@ export const VariantsDisplay = (props: any) => {
       );
     } catch (error) {
       console.error(`Error polling job ${jobId}:`, error);
+      // Update status to failed and remove from context
+      updateVariantJobStatus(jobId, 'failed');
+      setTimeout(() => {
+        removeVariantJob(jobId);
+      }, 2000);
     }
   };
 
@@ -330,9 +350,9 @@ export const VariantsDisplay = (props: any) => {
                       )} */}
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    {/* <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                       {variant.description}
-                    </p>
+                    </p> */}
 
                     {/* {variant.screenshot && (
                       <div className="mb-3">
