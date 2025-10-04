@@ -79,12 +79,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refetchUser = useCallback(async () => {
     try {
-      console.log('🔄 Calling getSession with disableCookieCache...');
       const freshSession = await getSession({ query: { disableCookieCache: true } });
       console.log('✅ Fresh session from getSession:', freshSession);
-      console.log('Brand analysis in fresh session:', freshSession?.data?.user?.project?.brandAnalysis);
 
-      console.log('🔄 Now calling refetch to update useSession hook...');
       await refetch();
       console.log('✅ Refetch completed');
     } catch (err) {
