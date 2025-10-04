@@ -1,16 +1,33 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import LogoText from "./branding/LogoText";
 import Logo from "./branding/Logo";
 import { Button } from "./ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { signOut } from "@/lib/better-auth";
 import { Settings, Trash2, Loader2, LogOut, ChevronDown } from "lucide-react";
 
 export default function Header() {
     const { user, project, isAuthenticated } = useAuth();
+    const pathname = usePathname();
     const [isResetting, setIsResetting] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Manage login-page class on body element
+    useEffect(() => {
+        if (pathname === "/login") {
+            document.body.classList.add("login-page");
+        } else {
+            document.body.classList.remove("login-page");
+        }
+        
+        // Cleanup on unmount
+        return () => {
+            document.body.classList.remove("login-page");
+        };
+    }, [pathname]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -66,10 +83,24 @@ export default function Header() {
         }
     };
 
-    const handleLogout = () => {
-        // Auth0 logout
-        window.location.href = '/api/auth/logout';
+    const handleLogout = async () => {
+        try {
+            console.log('🚀 Starting logout process...');
+            await signOut();
+            console.log('✅ Better Auth signOut completed');
+            // Redirect to home page after logout
+            window.location.href = '/';
+        } catch (error) {
+            console.error('❌ Logout failed:', error);
+            // Fallback: redirect anyway
+            window.location.href = '/';
+        }
     };
+
+    // Hide header on login page
+    if (pathname === "/login") {
+        return null;
+    }
 
     return (
         <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -82,7 +113,7 @@ export default function Header() {
                         <LogoText />
                     </div>
 
-                    {/* Right side - Settings Dropdown */}
+                    {/* Right side - Settings Dropdown or Logout Button */}
                     {isAuthenticated && project && project.brandAnalysis && (
                         <div className="relative" ref={dropdownRef}>
                             <Button
@@ -126,6 +157,19 @@ export default function Header() {
                                 </div>
                             )}
                         </div>
+                    )}
+
+                    {/* Simple logout button when authenticated but no project/brand analysis */}
+                    {isAuthenticated && (!project || !project.brandAnalysis) && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleLogout}
+                            className="flex items-center gap-2"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            Logout
+                        </Button>
                     )}
                 </div>
             </div>

@@ -1,29 +1,46 @@
-import { NextResponse } from 'next/server';
-import { auth0 } from '@/lib/auth0';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
-        const session = await auth0.getSession();
-        if (!session?.tokenSet?.accessToken) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        console.log('🚀 /api/chat POST route called');
+        
+        // Forward cookies for authentication
+        const cookie = request.headers.get('cookie');
+        console.log('Cookie header:', cookie ? 'Present' : 'Missing');
+        
+        if (!cookie) {
+            console.log('❌ No cookies found for chat authentication');
+            return NextResponse.json({ error: 'Unauthorized - No session cookie' }, { status: 401 });
         }
+
+        console.log('✅ Cookies found for chat authentication');
 
         const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
         const requestBody = await request.text();
 
+        console.log('📡 Calling backend chat API:', `${backendUrl}/api/chat`);
+        
         const upstream = await fetch(`${backendUrl}/api/chat`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${session.tokenSet.accessToken}`,
-                // forward content-type as json since we’re sending raw text we already read:
+                'Cookie': cookie,
+                // forward content-type as json since we're sending raw text we already read:
                 'Content-Type': request.headers.get('Content-Type') ?? 'application/json',
             },
+            credentials: 'include',
             body: requestBody,
+        });
+
+        console.log('📡 Backend chat response:', {
+            status: upstream.status,
+            statusText: upstream.statusText,
+            ok: upstream.ok,
         });
 
         if (!upstream.ok) {
             // try to surface backend error json/text
             const errText = await upstream.text();
+            console.error('❌ Backend chat error:', errText);
             return new NextResponse(errText || 'Upstream error', { status: upstream.status });
         }
 

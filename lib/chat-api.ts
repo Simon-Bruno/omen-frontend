@@ -30,6 +30,7 @@ class ChatApiService {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
+    
     const response = await fetch(url, {
       ...options,
       headers: {

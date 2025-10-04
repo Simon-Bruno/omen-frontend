@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import { auth0 } from '@/lib/auth0';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
     request: Request,
@@ -11,21 +10,14 @@ export async function GET(
         // Await params as required by Next.js
         const { jobId } = await params;
 
-        // Get the Auth0 session
-        const session = await auth0.getSession();
-
-        if (!session) {
-            console.log('❌ No Auth0 session found');
-            return NextResponse.json({ error: 'No session' }, { status: 401 });
+        // Forward cookies for authentication
+        const cookie = request.headers.get('cookie');
+        if (!cookie) {
+            console.log('❌ No cookies found');
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get access token for backend API calls
-        const accessToken = session.tokenSet.accessToken;
-
-        if (!accessToken) {
-            console.log('❌ No access token available');
-            return NextResponse.json({ error: 'No access token available' }, { status: 401 });
-        }
+        console.log('✅ Cookies found for authentication');
 
         if (!jobId) {
             return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
@@ -44,8 +36,9 @@ export async function GET(
         const response = await fetch(`${backendUrl}/api/project/${projectId}/jobs/${jobId}`, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${accessToken}`,
+                'Cookie': cookie,
             },
+            credentials: 'include',
         });
 
         console.log('📡 Backend job status response:', {

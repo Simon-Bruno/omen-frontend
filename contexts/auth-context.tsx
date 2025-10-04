@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
-import { useUser } from '@auth0/nextjs-auth0';
-
+import { useSession, getSession } from '@/lib/better-auth';
 
 interface Project {
   id: string;
@@ -11,10 +10,10 @@ interface Project {
 }
 
 interface User {
-  sub: string;
+  id: string;
   email: string;
-  name?: string;
-  picture?: string;
+  name: string;
+  emailVerified: boolean;
   project?: Project;
 }
 
@@ -42,115 +41,57 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { user: auth0User, error: auth0Error, isLoading: auth0Loading } = useUser();
+  const { data: session, error: sessionError, isPending: sessionLoading, refetch } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('Auth context useEffect triggered:', {
-      auth0Loading,
-      auth0Error: !!auth0Error,
-      auth0User: !!auth0User,
-      isLoading
-    });
-
-    if (auth0Loading) {
-      console.log('Auth0 is loading, setting loading to true');
+    if (sessionLoading) {
       setIsLoading(true);
       return;
     }
 
-    if (auth0Error) {
-      console.log('Auth0 error, setting loading to false');
-      setError(auth0Error);
+    if (sessionError) {
+      setError(sessionError);
       setIsLoading(false);
       return;
     }
 
-    if (auth0User) {
-      console.log('Auth0 user found, fetching user data...');
-      // User is authenticated with Auth0, fetch additional data from backend
-      fetchUserData();
-    } else {
-      console.log('No Auth0 user, clearing state');
-      // No user, clear state
-      setUser(null);
-      setError(null);
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth0User, auth0Error, auth0Loading]);
-
-  const fetchUserData = async () => {
-    try {
-      setIsLoading(true);
-      console.log('🔄 Fetching user data from backend...');
-
-      // Call our API route which will get the token and call the backend
-      const response = await fetch('/api/user/me', {
-        method: 'GET',
-        credentials: 'include', // Include cookies
-      });
-
-      console.log('User data API response:', {
-        status: response.status,
-        ok: response.ok
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch user data: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ User data received:', data);
-
-      // Transform the backend response to match our User interface
+    if (session?.user) {
       const user: User = {
-        sub: data.user.auth0Id,
-        email: data.user.email,
-        name: data.user.name || data.user.email,
-        picture: data.user.picture,
-        project: data.user.project,
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name || '',
+        emailVerified: session.user.emailVerified || false,
+        project: (session.user as any).project || null,
       };
 
       setUser(user);
       setError(null);
-      console.log('✅ User data set successfully');
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch user data');
-      setError(error);
-      console.error('❌ Failed to fetch user data:', err);
-    } finally {
-      console.log('🔄 Setting auth loading to false');
+      setIsLoading(false);
+    } else {
+      setUser(null);
+      setError(null);
       setIsLoading(false);
     }
-  };
+  }, [session, sessionError, sessionLoading]);
 
-  // Refetch user data function
   const refetchUser = useCallback(async () => {
-    if (!auth0User) return;
-
-    console.log('🔄 Refetching user data...');
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch('/api/user/me');
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data');
-      }
+      console.log('🔄 Calling getSession with disableCookieCache...');
+      const freshSession = await getSession({ query: { disableCookieCache: true } });
+      console.log('✅ Fresh session from getSession:', freshSession);
+      console.log('Brand analysis in fresh session:', freshSession?.data?.user?.project?.brandAnalysis);
 
-      const data = await response.json();
-      console.log('✅ User data refetched successfully:', data);
-      setUser(data.user);
+      console.log('🔄 Now calling refetch to update useSession hook...');
+      await refetch();
+      console.log('✅ Refetch completed');
     } catch (err) {
-      console.error('❌ Error refetching user data:', err);
-      setError(err instanceof Error ? err : new Error('Failed to refetch user data'));
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Error in refetchUser:', err);
+      setError(err instanceof Error ? err : new Error('Failed to refetch session'));
     }
-  }, [auth0User]);
+  }, [refetch]);
 
   // Extract additional data from user object if available
   const project = user?.project || null;

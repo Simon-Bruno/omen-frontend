@@ -77,13 +77,13 @@ const Loader = () => {
               clearInterval(interval);
               interval = null;
             }
-            
+
             // If completed, refetch user profile to get updated brandAnalysis
             if (data.status === 'completed') {
               console.log('Brand summary completed, refetching user profile...');
               await refetchUser();
             }
-            
+
             return true; // Signal to stop polling
           }
         } else {
@@ -163,7 +163,7 @@ const Loader = () => {
       <div className="flex flex-col items-center justify-center p-8 space-y-4">
         <CheckCircle className="h-8 w-8 text-green-600" />
         <p className="text-lg font-medium text-green-600">Brand summary completed!</p>
-        <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+        <p className="text-sm text-gray-500">Redirecting to home...</p>
       </div>
     );
   }
