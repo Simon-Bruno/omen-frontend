@@ -2,19 +2,23 @@
 "use client";
 
 import { Assistant } from "./assistant";
-import { AuthFlow } from "@/components/auth/auth-flow";
 import { useAuth } from "@/contexts/auth-context";
 import BrandAnalysis from "@/components/brandAnalysis/brandAnalysis";
 import { CopilotConsole } from "@/components/assistant-ui/copilot-console";
-import {
-  Store,
-  Palette,
-  FlaskConical,
-  Rocket,
-  TrendingUp,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Only redirect if we're done loading and definitely not authenticated
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -28,7 +32,7 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return <AuthFlow />;
+    return null; // Will redirect to login
   }
 
   if (user?.project?.brandAnalysis == null) {

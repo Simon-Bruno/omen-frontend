@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 const brandAnalysis: React.FC = () => {
   const { user, refetchUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [hasRefetched, setHasRefetched] = useState(false);
 
   useEffect(() => {
     const startBrandAnalysis = async () => {
@@ -46,11 +47,19 @@ const brandAnalysis: React.FC = () => {
             const statusData = await statusResponse.json();
             console.log('Brand analysis status:', statusData);
 
-            if (statusData.status === 'completed') {
+            if (statusData.status === 'completed' && !hasRefetched) {
+              console.log('🎉 Brand analysis completed! Calling refetchUser...');
               clearInterval(pollInterval);
+              setHasRefetched(true);
               // Refetch user data to get the updated brand analysis
-              await refetchUser();
+              try {
+                await refetchUser();
+                console.log('✅ refetchUser completed successfully');
+              } catch (err) {
+                console.error('❌ Error calling refetchUser:', err);
+              }
             } else if (statusData.status === 'failed') {
+              console.log('❌ Brand analysis failed');
               clearInterval(pollInterval);
               setError('Brand analysis failed. Please try again.');
             }

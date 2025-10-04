@@ -1,25 +1,17 @@
-import { NextResponse } from 'next/server';
-import { auth0 } from '@/lib/auth0';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     console.log('🚀 /api/brand-summary POST route called');
     
-    // Get the Auth0 session
-    const session = await auth0.getSession();
-    
-    if (!session) {
-      console.log('❌ No Auth0 session found');
-      return NextResponse.json({ error: 'No session' }, { status: 401 });
+    // Forward cookies for authentication
+    const cookie = request.headers.get('cookie');
+    if (!cookie) {
+      console.log('❌ No cookies found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get access token for backend API calls
-    const accessToken = session.tokenSet.accessToken;
-    
-    if (!accessToken) {
-      console.log('❌ No access token available');
-      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
-    }
+    console.log('✅ Cookies found for authentication');
 
     const body = await request.json();
     const { projectId } = body;
@@ -33,9 +25,10 @@ export async function POST(request: Request) {
     const response = await fetch(`${backendUrl}/api/project/${projectId}/brand-summary`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Cookie': cookie,
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({ projectId }),
     });
 

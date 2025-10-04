@@ -1,28 +1,20 @@
-import { NextResponse } from 'next/server';
-import { auth0 } from '@/lib/auth0';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
     console.log('🚀 /api/projects/[projectId]/reset POST route called');
 
-    // Get the Auth0 session
-    const session = await auth0.getSession();
-
-    if (!session) {
-      console.log('❌ No Auth0 session found');
-      return NextResponse.json({ error: 'No session' }, { status: 401 });
+    // Forward cookies for authentication
+    const cookie = request.headers.get('cookie');
+    if (!cookie) {
+      console.log('❌ No cookies found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get access token for backend API calls
-    const accessToken = session.tokenSet.accessToken;
-
-    if (!accessToken) {
-      console.log('❌ No access token available');
-      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
-    }
+    console.log('✅ Cookies found for authentication');
 
     const { projectId } = await params;
 
@@ -35,8 +27,9 @@ export async function POST(
     const response = await fetch(`${backendUrl}/api/project/${projectId}/reset`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Cookie': cookie,
       },
+      credentials: 'include',
     });
 
     console.log('📡 Backend project reset response:', {
@@ -62,27 +55,20 @@ export async function POST(
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
     console.log('🚀 /api/projects/[projectId]/reset/status GET route called');
 
-    // Get the Auth0 session
-    const session = await auth0.getSession();
-
-    if (!session) {
-      console.log('❌ No Auth0 session found');
-      return NextResponse.json({ error: 'No session' }, { status: 401 });
+    // Forward cookies for authentication
+    const cookie = request.headers.get('cookie');
+    if (!cookie) {
+      console.log('❌ No cookies found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get access token for backend API calls
-    const accessToken = session.tokenSet.accessToken;
-
-    if (!accessToken) {
-      console.log('❌ No access token available');
-      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
-    }
+    console.log('✅ Cookies found for authentication');
 
     const { projectId } = await params;
 
@@ -95,8 +81,9 @@ export async function GET(
     const response = await fetch(`${backendUrl}/api/project/${projectId}/reset/status`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Cookie': cookie,
       },
+      credentials: 'include',
     });
 
     console.log('📡 Backend project reset status response:', {
