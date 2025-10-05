@@ -7,10 +7,11 @@ const statusUpdateSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('🚀 PATCH /api/experiments/:id/status route called', { id: params.id });
+    const { id } = await params;
+    console.log('🚀 PATCH /api/experiments/:id/status route called', { id });
 
     // Parse and validate request body
     const body = await request.json();
@@ -34,7 +35,7 @@ export async function PATCH(
 
     // Call the backend status update endpoint
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-    const response = await fetch(`${backendUrl}/api/experiments/${params.id}/status`, {
+    const response = await fetch(`${backendUrl}/api/experiments/${id}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

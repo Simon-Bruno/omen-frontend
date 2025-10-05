@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('🚀 GET /api/experiments/:id route called', { id: params.id });
+    const { id } = await params;
+    console.log('🚀 GET /api/experiments/:id route called', { id });
 
     // Call the backend experiment details endpoint
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-    const response = await fetch(`${backendUrl}/api/experiments/${params.id}`, {
+    const response = await fetch(`${backendUrl}/api/experiments/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -48,14 +49,15 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('🚀 DELETE /api/experiments/:id route called', { id: params.id });
+    const { id } = await params;
+    console.log('🚀 DELETE /api/experiments/:id route called', { id });
 
     // Call the backend delete experiment endpoint
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-    const response = await fetch(`${backendUrl}/api/experiments/${params.id}`, {
+    const response = await fetch(`${backendUrl}/api/experiments/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
