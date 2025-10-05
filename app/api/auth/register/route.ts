@@ -4,17 +4,18 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📝 Proxying register-with-shopify request to backend');
+    console.log('📝 Proxying register request to backend');
 
     const body = await request.json();
     console.log('Request body:', {
       email: body.email,
       name: body.name,
-      shop: body.shop,
+      websiteUrl: body.websiteUrl,
+      isShopify: body.isShopify,
       hasPassword: !!body.password
     });
 
-    const response = await fetch(`${BACKEND_URL}/api/auth/register-with-shopify`, {
+    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -28,11 +29,11 @@ export async function POST(request: NextRequest) {
 
     // Log the raw response text first
     const rawResponse = await response.text();
-    console.log('Raw backend register-with-shopify response:', rawResponse);
+    console.log('Raw backend register response:', rawResponse);
 
     // Parse the JSON
     const data = rawResponse ? JSON.parse(rawResponse) : null;
-    console.log('Backend register-with-shopify response data:', JSON.stringify(data, null, 2));
+    console.log('Backend register response data:', JSON.stringify(data, null, 2));
 
     if (!response.ok) {
       console.error('Backend error:', data);
@@ -47,10 +48,10 @@ export async function POST(request: NextRequest) {
       console.log('Forwarding cookies from backend:', setCookieHeader);
     }
 
-    console.log('✅ Register-with-shopify successful');
+    console.log('✅ Register successful');
     return NextResponse.json(data, { headers: responseHeaders });
   } catch (error) {
-    console.error('💥 Register-with-shopify proxy error:', error);
+    console.error('💥 Register proxy error:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

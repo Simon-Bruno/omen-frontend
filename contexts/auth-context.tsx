@@ -5,8 +5,13 @@ import { useSession, getSession } from '@/lib/better-auth';
 
 interface Project {
   id: string;
-  shopDomain: string;
+  shopDomain: string;  // Now generic website URL for all stores
+  isShopify: boolean;  // New field
   brandAnalysis: JSON;
+  // Shopify-only fields (may be null for non-Shopify):
+  shopPlan?: string;
+  shopCurrency?: string;
+  shopCountry?: string;
 }
 
 interface User {

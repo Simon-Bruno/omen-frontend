@@ -395,8 +395,41 @@ export const analyticsApi = {
     sessionId: string
   ): Promise<SessionDetails> {
     const endpoint = `/api/analytics/journey/${sessionId}`;
-    
+
     const response = await apiRequest<SessionDetails>(endpoint);
+    return response;
+  },
+
+  /**
+   * Create a new experiment manually
+   */
+  async createExperiment(experimentData: {
+    name: string;
+    oec: string;
+    minDays?: number;
+    minSessionsPerVariant?: number;
+    targetUrls?: string[];
+    hypothesis: {
+      hypothesis: string;
+      rationale: string;
+      primaryKpi: string;
+    };
+    variants: Array<{
+      variantId: string;
+      selector?: string;
+      html?: string;
+      css?: string;
+      position?: 'INNER' | 'OUTER' | 'BEFORE' | 'AFTER';
+    }>;
+    trafficDistribution?: Record<string, number>;
+  }): Promise<any> {
+    const endpoint = '/api/experiments';
+
+    const response = await apiRequest<any>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(experimentData),
+    });
+
     return response;
   },
 };
