@@ -21,8 +21,9 @@ export default function LoginPage() {
   const [registerData, setRegisterData] = useState({
     name: "",
     email: "",
-    shop: "",
+    websiteUrl: "",
     password: "",
+    isShopify: true, // Default to Shopify for backward compatibility
   });
   const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({});
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
@@ -57,16 +58,27 @@ export default function LoginPage() {
       newErrors.password = "Password must be at least 8 characters long";
     }
 
-    if (!registerData.shop) {
-      newErrors.shop = "Shop domain is required";
+    if (!registerData.websiteUrl) {
+      newErrors.websiteUrl = "Website URL is required";
     } else {
-      // Normalize shop domain
-      let normalizedShop = registerData.shop.trim();
-      if (!normalizedShop.includes(".")) {
-        normalizedShop = `${normalizedShop}.myshopify.com`;
-      }
-      if (!normalizedShop.endsWith(".myshopify.com")) {
-        newErrors.shop = "Please enter a valid Shopify store domain (e.g., mystore or mystore.myshopify.com)";
+      const url = registerData.websiteUrl.trim();
+      
+      if (registerData.isShopify) {
+        // For Shopify stores, validate .myshopify.com format
+        let normalizedUrl = url;
+        if (!normalizedUrl.includes(".")) {
+          normalizedUrl = `${normalizedUrl}.myshopify.com`;
+        }
+        if (!normalizedUrl.endsWith(".myshopify.com")) {
+          newErrors.websiteUrl = "Please enter a valid Shopify store domain (e.g., mystore or mystore.myshopify.com)";
+        }
+      } else {
+        // For non-Shopify stores, validate general URL format
+        try {
+          new URL(url.startsWith('http') ? url : `https://${url}`);
+        } catch {
+          newErrors.websiteUrl = "Please enter a valid website URL (e.g., https://example.com)";
+        }
       }
     }
 
@@ -126,21 +138,31 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Normalize shop domain
-      let normalizedShop = registerData.shop.trim();
-      if (!normalizedShop.includes(".")) {
-        normalizedShop = `${normalizedShop}.myshopify.com`;
+      // Normalize website URL
+      let normalizedUrl = registerData.websiteUrl.trim();
+      
+      if (registerData.isShopify) {
+        // For Shopify stores, normalize to .myshopify.com format
+        if (!normalizedUrl.includes(".")) {
+          normalizedUrl = `${normalizedUrl}.myshopify.com`;
+        }
+      } else {
+        // For non-Shopify stores, ensure URL has protocol
+        if (!normalizedUrl.startsWith('http')) {
+          normalizedUrl = `https://${normalizedUrl}`;
+        }
       }
 
       console.log('Registration form submitting:', {
         email: registerData.email,
         name: registerData.name,
-        shop: normalizedShop,
+        websiteUrl: normalizedUrl,
+        isShopify: registerData.isShopify,
         hasPassword: !!registerData.password
       });
 
-      // Use the integrated registration endpoint that creates user + project
-      const response = await fetch("/api/auth/register-with-shopify", {
+      // Use the new registration endpoint that supports both store types
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -149,7 +171,8 @@ export default function LoginPage() {
           email: registerData.email,
           password: registerData.password,
           name: registerData.name,
-          shop: normalizedShop,
+          websiteUrl: normalizedUrl,
+          isShopify: registerData.isShopify,
         }),
       });
 
@@ -167,14 +190,15 @@ export default function LoginPage() {
         // Store registration data temporarily
         sessionStorage.setItem('pending_registration', JSON.stringify({
           email: registerData.email,
-          shop: normalizedShop,
+          websiteUrl: normalizedUrl,
+          isShopify: registerData.isShopify,
           ...data
         }));
 
         console.log('Registration response data:', data);
 
-        // Check if we need to redirect to Shopify OAuth
-        if (data.oauthUrl) {
+        // Check if we need to redirect to Shopify OAuth (only for Shopify stores)
+        if (data.isShopify && data.oauthUrl) {
           console.log('Redirecting to Shopify OAuth:', data.oauthUrl);
           toast.success("Account created! Redirecting to Shopify...");
           // Redirect to Shopify OAuth
@@ -182,10 +206,15 @@ export default function LoginPage() {
           return;
         }
 
-        // Session is automatically established by Better Auth - no reload needed
+        // For non-Shopify stores or if no OAuth needed, registration is complete
         console.log('Registration successful, session established automatically');
-
-        toast.success("Account created successfully!");
+        
+        if (data.isShopify) {
+          toast.success("Account created successfully!");
+        } else {
+          toast.success("Account and project created successfully!");
+        }
+        
         // The auth context will automatically handle the redirect via useEffect
       } else {
         throw new Error(data.message || "Registration failed");
@@ -195,8 +224,10 @@ export default function LoginPage() {
 
       if (error?.message?.includes("email already exists")) {
         errorMessage = "An account with this email already exists. Please try logging in instead.";
-      } else if (error?.message?.includes("shop")) {
-        errorMessage = "Invalid Shopify store. Please check your store domain.";
+      } else if (error?.message?.includes("website") || error?.message?.includes("shop")) {
+        errorMessage = registerData.isShopify 
+          ? "Invalid Shopify store. Please check your store domain."
+          : "Invalid website URL. Please check your website address.";
       } else if (error?.message?.includes("validation")) {
         errorMessage = "Please check all fields and try again.";
       }
@@ -387,31 +418,65 @@ export default function LoginPage() {
                 )}
               </div>
 
-              {/* Shop Field */}
+              {/* Store Type Toggle */}
+              <div className="space-y-2">
+                <label className="font-dmSans text-sm font-medium text-white">
+                  Store Type
+                </label>
+                <div className="flex bg-black/20 rounded-xl p-1">
+                  <button
+                    type="button"
+                    onClick={() => setRegisterData(prev => ({ ...prev, isShopify: true }))}
+                    className={`flex-1 py-2 px-4 rounded-lg font-dmSans text-sm font-medium transition-all duration-200 ${
+                      registerData.isShopify
+                        ? "bg-white/20 text-white"
+                        : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    Shopify Store
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegisterData(prev => ({ ...prev, isShopify: false }))}
+                    className={`flex-1 py-2 px-4 rounded-lg font-dmSans text-sm font-medium transition-all duration-200 ${
+                      !registerData.isShopify
+                        ? "bg-white/20 text-white"
+                        : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    Other Store
+                  </button>
+                </div>
+              </div>
+
+              {/* Website URL Field */}
               <div className="space-y-2">
                 <label
-                  htmlFor="register-shop"
+                  htmlFor="register-website"
                   className="font-dmSans text-sm font-medium text-white"
                 >
-                  Shopify Store
+                  {registerData.isShopify ? "Shopify Store" : "Website URL"}
                 </label>
                 <div className="relative">
                   <Store className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white w-5 h-5" />
                   <input
-                    id="register-shop"
+                    id="register-website"
                     type="text"
-                    value={registerData.shop}
-                    onChange={(e) => setRegisterData(prev => ({ ...prev, shop: e.target.value }))}
+                    value={registerData.websiteUrl}
+                    onChange={(e) => setRegisterData(prev => ({ ...prev, websiteUrl: e.target.value }))}
                     className="font-dmSans text-base w-full pl-11 pr-4 py-3 bg-black/40 border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
-                    placeholder="mystore or mystore.myshopify.com"
+                    placeholder={registerData.isShopify ? "mystore or mystore.myshopify.com" : "https://example.com"}
                     required
                   />
                 </div>
-                {registerErrors.shop && (
-                  <p className="text-sm text-red-400">{registerErrors.shop}</p>
+                {registerErrors.websiteUrl && (
+                  <p className="text-sm text-red-400">{registerErrors.websiteUrl}</p>
                 )}
                 <p className="text-xs text-gray-300 -mt-1">
-                  Enter your store name (e.g., "mystore") or full domain
+                  {registerData.isShopify 
+                    ? "Enter your store name (e.g., \"mystore\") or full domain"
+                    : "Enter your website URL (e.g., \"https://example.com\")"
+                  }
                 </p>
               </div>
 
@@ -460,7 +525,7 @@ export default function LoginPage() {
                 disabled={isSubmitting}
                 className="font-dmSans text-base font-bold w-full py-3 px-6 bg-black/40 hover:bg-black/60 border border-white/20 text-white rounded-xl shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Creating Account..." : "Create Account & Connect Store"}
+                {isSubmitting ? "Creating Account..." : registerData.isShopify ? "Create Account & Connect Store" : "Create Account"}
               </button>
             </form>
           )}

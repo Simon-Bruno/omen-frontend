@@ -13,8 +13,9 @@ import { ConversionTable } from '@/components/analytics/ConversionTable';
 import { ExposureStats } from '@/components/analytics/ExposureStats';
 import { UserJourney } from '@/components/analytics/UserJourney';
 import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
+import { ExperimentList } from '@/components/experiments/ExperimentList';
 import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
-import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3 } from 'lucide-react';
+import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { isAuthenticated, isLoading, user, project } = useAuth();
@@ -22,7 +23,7 @@ export default function AnalyticsPage() {
   const router = useRouter();
   
   // State management
-  const [activeTab, setActiveTab] = useState<'overview' | 'funnel' | 'conversions' | 'traffic' | 'journey'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'traffic' | 'journey'>('overview');
   const [error, setError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false); // Toggle for mock vs real data
   
@@ -331,6 +332,7 @@ export default function AnalyticsPage() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'experiments', label: 'Experiments', icon: Target },
     { id: 'funnel', label: 'Funnel Analysis', icon: TrendingUp },
     { id: 'conversions', label: 'A/B Test Results', icon: Target },
     { id: 'traffic', label: 'Traffic Overview', icon: Users },
@@ -391,14 +393,18 @@ export default function AnalyticsPage() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {funnelData?.variants.reduce((best, current) => 
-              current.conversionRate > best.conversionRate ? current : best
-            )?.variantId || 'N/A'}
+              {funnelData?.variants && funnelData.variants.length > 0 
+              ? funnelData.variants.reduce((best, current) => 
+                  current.conversionRate > best.conversionRate ? current : best
+                ).variantId 
+              : 'N/A'}
           </div>
           <p className="text-xs text-muted-foreground">
-            {funnelData?.variants.reduce((best, current) => 
-              current.conversionRate > best.conversionRate ? current : best
-            )?.conversionRate.toFixed(1) || '0.0'}% conversion
+            {funnelData?.variants && funnelData.variants.length > 0 
+              ? funnelData.variants.reduce((best, current) => 
+                  current.conversionRate > best.conversionRate ? current : best
+                ).conversionRate.toFixed(1) + '% conversion'
+              : '0.0% conversion'}
           </p>
         </CardContent>
       </Card>
@@ -430,6 +436,8 @@ export default function AnalyticsPage() {
             </div>
           </div>
         );
+      case 'experiments':
+        return <ExperimentList />;
       case 'funnel':
         return funnelData ? <FunnelChart data={funnelData} /> : <div>No funnel data available</div>;
       case 'conversions':
@@ -471,6 +479,15 @@ export default function AnalyticsPage() {
               <p className="text-gray-600 mt-1">Track and analyze your experiment performance</p>
             </div>
             <div className="flex items-center gap-4">
+              {/* Create Experiment Button */}
+              <Button
+                onClick={() => router.push('/experiments/create')}
+                size="sm"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Experiment
+              </Button>
+
               {/* Data Source Toggle */}
               <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">Data Source:</span>
@@ -488,10 +505,10 @@ export default function AnalyticsPage() {
                   </span>
                 </div>
               </div>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
+
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={loadData}
                 disabled={loading || !selectedExperimentId}
               >
