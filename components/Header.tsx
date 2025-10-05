@@ -6,7 +6,8 @@ import Logo from "./branding/Logo";
 import { Button } from "./ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "@/lib/better-auth";
-import { Settings, Trash2, Loader2, LogOut, ChevronDown } from "lucide-react";
+import { Settings, Trash2, Loader2, LogOut, ChevronDown, BarChart3 } from "lucide-react";
+import Link from "next/link";
 
 export default function Header() {
     const { user, project, isAuthenticated } = useAuth();
@@ -113,49 +114,65 @@ export default function Header() {
                         <LogoText />
                     </div>
 
-                    {/* Right side - Settings Dropdown or Logout Button */}
-                    {isAuthenticated && project && project.brandAnalysis && (
-                        <div className="relative" ref={dropdownRef}>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowDropdown(!showDropdown)}
-                                className="flex items-center gap-2"
-                            >
-                                <Settings className="h-4 w-4" />
-                                Settings
-                                <ChevronDown className="h-4 w-4" />
-                            </Button>
 
-                            {/* Dropdown Menu */}
-                            {showDropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                                    <div className="py-1">
-                                        <button
-                                            onClick={handleResetProject}
-                                            disabled={isResetting}
-                                            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isResetting ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Trash2 className="h-4 w-4" />
-                                            )}
-                                            {isResetting ? 'Resetting...' : 'Reset Project'}
-                                        </button>
-                                        
-                                        <div className="border-t border-gray-100"></div>
-                                        
-                                        <button
-                                            onClick={handleLogout}
-                                            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                        >
-                                            <LogOut className="h-4 w-4" />
-                                            Logout
-                                        </button>
+                    {/* Right side - Navigation and Settings */}
+                    {isAuthenticated && project && project.brandAnalysis && (
+                        <div className="flex items-center gap-3">
+                            {/* Analytics Link */}
+                            <Link href="/analytics">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                >
+                                    <BarChart3 className="h-4 w-4" />
+                                    Analytics
+                                </Button>
+                            </Link>
+
+                            {/* Settings Dropdown */}
+                            <div className="relative" ref={dropdownRef}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    Settings
+                                    <ChevronDown className="h-4 w-4" />
+                                </Button>
+
+                                {/* Dropdown Menu */}
+                                {showDropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                        <div className="py-1">
+                                            <button
+                                                onClick={handleResetProject}
+                                                disabled={isResetting}
+                                                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isResetting ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
+                                                {isResetting ? 'Resetting...' : 'Reset Project'}
+                                            </button>
+                                            
+                                            <div className="border-t border-gray-100"></div>
+                                            
+                                            <button
+                                                onClick={handleLogout}
+                                                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                            >
+                                                <LogOut className="h-4 w-4" />
+                                                Logout
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     )}
 

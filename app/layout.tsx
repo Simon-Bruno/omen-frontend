@@ -3,6 +3,7 @@ import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
+import { AnalyticsProvider } from "@/contexts/analytics-context";
 import Header from "@/components/Header";
 
 const dmSans = localFont({
@@ -52,8 +53,10 @@ export default function RootLayout({
     <html lang="en" className={`${dmSans.variable} ${geistMono.variable}`}>
       <body className="antialiased">
         <AuthProvider>
-          <Header />
-          {children}
+          <AnalyticsProvider>
+            <Header />
+            {children}
+          </AnalyticsProvider>
         </AuthProvider>
       </body>
     </html>

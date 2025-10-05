@@ -82,8 +82,16 @@ export const VariantsDisplay = (props: any) => {
     console.log('🖱️ Variant clicked:', variant.variant_label, 'jobId:', jobId);
     
     if (jobId) {
-      // Open preview URL in new tab
-      const previewUrl = `https://omen-mvp.myshopify.com/?preview=true&jobId=${jobId}`;
+      // Determine the correct Shopify URL based on environment
+      const isDevelopment = process.env.NODE_ENV === 'development' || 
+                           (typeof window !== 'undefined' && window.location.hostname === 'localhost');
+      
+      const shopifyUrl = isDevelopment 
+        ? 'http://localhost:9292' // Your local Shopify development store
+        : 'https://omen-mvp.myshopify.com'; // Production store
+      
+      const previewUrl = `${shopifyUrl}/?preview=true&jobId=${jobId}`;
+      console.log('🔗 Opening preview URL:', previewUrl);
       window.open(previewUrl, '_blank', 'noopener,noreferrer');
     } else {
       // Fallback to modal for variants without jobId

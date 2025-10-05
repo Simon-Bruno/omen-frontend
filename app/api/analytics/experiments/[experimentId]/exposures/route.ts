@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ experimentId: string }> }
+) {
+  try {
+    const { experimentId } = await params;
+    console.log('🚀 /api/analytics/experiments/exposures route called with experimentId:', experimentId);
+    
+    // Call the backend analytics endpoint
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+    const response = await fetch(`${backendUrl}/api/analytics/experiments/${experimentId}/exposures`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || '', // Forward cookies for authentication
+      },
+    });
+
+    console.log('📡 Backend analytics/exposures response:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Backend analytics/exposures error:', errorData);
+      return NextResponse.json({ error: 'Failed to fetch exposure data' }, { status: response.status });
+    }
+
+    const data = await response.json();
+    console.log('✅ Exposure data fetched successfully');
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('💥 Error fetching exposure data:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
