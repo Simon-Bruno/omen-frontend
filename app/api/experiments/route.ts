@@ -17,12 +17,30 @@ const hypothesisSchema = z.object({
   primaryKpi: z.string().min(1, 'Primary KPI is required'),
 });
 
+const domTargetingRule = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('selectorExists'), selector: z.string().min(1) }),
+  z.object({ type: z.literal('selectorNotExists'), selector: z.string().min(1) }),
+  z.object({ type: z.literal('textContains'), selector: z.string().min(1), text: z.string().min(1) }),
+  z.object({ type: z.literal('attrEquals'), selector: z.string().min(1), attr: z.string().min(1), value: z.string() }),
+  z.object({ type: z.literal('meta'), name: z.string().min(1), value: z.string(), by: z.enum(['name', 'property']).optional() }),
+  z.object({ type: z.literal('cookie'), name: z.string().min(1), value: z.string() }),
+  z.object({ type: z.literal('localStorage'), key: z.string().min(1), value: z.string() }),
+  z.object({ type: z.literal('urlParam'), name: z.string().min(1), value: z.string() })
+]);
+
+const domTargetingSchema = z.object({
+  match: z.enum(['all', 'any']).optional().default('all'),
+  timeoutMs: z.number().int().min(0).max(10000).optional().default(1500),
+  rules: z.array(domTargetingRule).min(1)
+}).optional();
+
 const createExperimentSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   oec: z.string().min(1, 'OEC is required'),
   minDays: z.number().min(1).optional().default(7),
   minSessionsPerVariant: z.number().min(1).optional().default(1000),
   targetUrls: z.array(z.string()).optional(),
+  targeting: domTargetingSchema,
   hypothesis: hypothesisSchema,
   variants: z.array(variantSchema).min(1, 'At least one variant is required'),
   trafficDistribution: z.record(z.string(), z.number().min(0).max(1)).optional(),
@@ -68,12 +86,23 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json();
+    console.log('📝 Incoming payload (truncated):', {
+      keys: Object.keys(body || {}),
+      hasTargeting: !!body?.targeting,
+      targetingPreview: body?.targeting ? {
+        match: body.targeting.match,
+        timeoutMs: body.targeting.timeoutMs,
+        rulesCount: Array.isArray(body.targeting.rules) ? body.targeting.rules.length : 0,
+        firstRule: Array.isArray(body.targeting.rules) ? body.targeting.rules[0] : undefined
+      } : undefined
+    });
 
     let validatedData;
     try {
       validatedData = createExperimentSchema.parse(body);
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
+        console.error('❌ Proxy validation error:', validationError.issues);
         return NextResponse.json(
           {
             error: 'VALIDATION_ERROR',
@@ -104,10 +133,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Backend create experiment error:', errorData);
+      let backendBodyText = await response.text();
+      let backendParsed: any = undefined;
+      try { backendParsed = JSON.parse(backendBodyText); } catch (_) { /* not json */ }
+      console.error('❌ Backend create experiment error body:', backendParsed || backendBodyText);
       return NextResponse.json(
-        errorData,
+        {
+          error: 'BACKEND_ERROR',
+          message: 'Backend rejected experiment creation',
+          backendStatus: response.status,
+          backendBody: backendParsed || backendBodyText,
+          sentPayloadPreview: {
+            hasTargeting: !!validatedData?.targeting,
+            rulesCount: Array.isArray(validatedData?.targeting?.rules) ? validatedData.targeting.rules.length : 0,
+          }
+        },
         { status: response.status }
       );
     }
@@ -115,11 +155,12 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
-    console.error('💥 Error creating experiment:', error);
+    console.error('💥 Error creating experiment (proxy):', error);
     return NextResponse.json(
       {
         error: 'INTERNAL_ERROR',
         message: 'Failed to create experiment',
+        reason: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

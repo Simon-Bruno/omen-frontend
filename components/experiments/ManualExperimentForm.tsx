@@ -31,6 +31,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
   const [minDays, setMinDays] = useState(7);
   const [minSessionsPerVariant, setMinSessionsPerVariant] = useState(1000);
   const [targetUrls, setTargetUrls] = useState('');
+  const [targetingJson, setTargetingJson] = useState('');
 
   // Hypothesis state
   const [hypothesis, setHypothesis] = useState('');
@@ -97,11 +98,46 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
 
       // Add optional fields
       if (targetUrls.trim()) {
-        payload.targetUrls = targetUrls.split(',').map(url => url.trim()).filter(url => url);
+        try {
+          // Try to parse as JSON first (in case it's a stringified array)
+          const parsed = JSON.parse(targetUrls);
+          if (Array.isArray(parsed)) {
+            payload.targetUrls = parsed;
+          } else {
+            // Fallback to comma-split
+            payload.targetUrls = targetUrls.split(',').map(url => url.trim()).filter(url => url);
+          }
+        } catch {
+          // Not JSON, treat as comma-separated
+          payload.targetUrls = targetUrls.split(',').map(url => url.trim()).filter(url => url);
+        }
       }
 
       if (useCustomTraffic) {
         payload.trafficDistribution = trafficDistribution;
+      }
+
+      // Optional DOM targeting JSON block
+      console.log('🔍 targetingJson value:', JSON.stringify(targetingJson));
+      if (targetingJson.trim()) {
+        try {
+          const parsed = JSON.parse(targetingJson);
+          console.log('🔍 parsed targeting:', parsed);
+          // Validate required structure
+          if (!parsed.rules || !Array.isArray(parsed.rules) || parsed.rules.length === 0) {
+            throw new Error('targeting must have a non-empty rules array. Expected: {"match":"all","rules":[{"type":"selectorExists","selector":"..."}]}');
+          }
+          // Ensure match and timeoutMs have defaults
+          if (!parsed.match) parsed.match = 'all';
+          if (!parsed.timeoutMs) parsed.timeoutMs = 1500;
+          payload.targeting = parsed;
+          console.log('✅ targeting added to payload');
+        } catch (err) {
+          console.error('❌ targeting parse error:', err);
+          throw new Error(`Invalid DOM targeting JSON: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+      } else {
+        console.log('ℹ️ No targeting JSON provided');
       }
 
       const response = await fetch('/api/experiments', {
@@ -226,6 +262,22 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
             />
             <p className="text-xs text-gray-500 mt-1">
               Leave empty to run on all pages. Use wildcards like /products/* for patterns.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              DOM Targeting JSON (optional)
+            </label>
+            <textarea
+              value={targetingJson}
+              onChange={(e) => setTargetingJson(e.target.value)}
+              placeholder='{"match":"all","timeoutMs":1500,"rules":[{"type":"selectorExists","selector":"form[action*=/cart/add]"}]}'
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Declarative rules: selectorExists, selectorNotExists, textContains, attrEquals, meta, cookie, localStorage, urlParam
             </p>
           </div>
         </CardContent>
