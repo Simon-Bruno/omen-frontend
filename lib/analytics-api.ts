@@ -419,6 +419,7 @@ export const analyticsApi = {
       selector?: string;
       html?: string;
       css?: string;
+      js?: string;
       position?: 'INNER' | 'OUTER' | 'BEFORE' | 'AFTER';
     }>;
     trafficDistribution?: Record<string, number>;

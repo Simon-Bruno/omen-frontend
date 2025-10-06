@@ -7,6 +7,7 @@ const variantSchema = z.object({
   selector: z.string().optional().default('body'),
   html: z.string().optional().default(''),
   css: z.string().optional(),
+  js: z.string().optional(),
   position: z.enum(['INNER', 'OUTER', 'BEFORE', 'AFTER', 'APPEND', 'PREPEND']).optional().default('INNER'),
 });
 

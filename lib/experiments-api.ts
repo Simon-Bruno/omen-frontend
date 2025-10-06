@@ -48,6 +48,7 @@ export interface ExperimentDetails extends Experiment {
     selector: string;
     html: string;
     css?: string;
+    js?: string;
     position: 'INNER' | 'OUTER' | 'BEFORE' | 'AFTER' | 'APPEND' | 'PREPEND';
   }>;
 }
@@ -68,6 +69,7 @@ export interface CreateExperimentRequest {
     selector: string;
     html: string;
     css?: string;
+    js?: string;
     position: 'INNER' | 'OUTER' | 'BEFORE' | 'AFTER' | 'APPEND' | 'PREPEND';
   }>;
   trafficDistribution?: Record<string, number>;
@@ -334,3 +336,4 @@ export const experimentUtils = {
     }
   },
 };
+
