@@ -11,6 +11,7 @@ interface Variant {
   selector: string;
   html: string;
   css: string;
+  js?: string;
   position: 'INNER' | 'OUTER' | 'BEFORE' | 'AFTER' | 'APPEND' | 'PREPEND';
 }
 
@@ -38,7 +39,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
 
   // Variants state
   const [variants, setVariants] = useState<Variant[]>([
-    { variantId: 'A', selector: 'body', html: '', css: '', position: 'INNER' },
+    { variantId: 'A', selector: 'body', html: '', css: '', js: '', position: 'INNER' },
   ]);
 
   // Traffic distribution state
@@ -52,6 +53,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
       selector: 'body',
       html: '',
       css: '',
+      js: '',
       position: 'INNER',
     }]);
   };
@@ -88,6 +90,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
           selector: v.selector || 'body',
           html: v.html || '',
           css: v.css || undefined,
+          js: v.js || undefined,
           position: v.position || 'INNER',
         })),
       };
@@ -371,6 +374,19 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                   value={variant.css}
                   onChange={(e) => updateVariant(index, 'css', e.target.value)}
                   placeholder="e.g., .button { background: green; }"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  JavaScript (optional)
+                </label>
+                <textarea
+                  value={variant.js || ''}
+                  onChange={(e) => updateVariant(index, 'js', e.target.value)}
+                  placeholder="e.g., document.querySelector('.btn')?.addEventListener('click', () => {...})"
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                 />
