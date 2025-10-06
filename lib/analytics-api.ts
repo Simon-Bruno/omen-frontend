@@ -15,7 +15,7 @@ const getBaseUrl = () => {
 // Type definitions for analytics data
 export interface FunnelStep {
   step: string;
-  eventType: 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION';
+  eventType: 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION' | 'PURCHASE';
   count: number;
   percentage: number;
   dropoffRate: number;
@@ -66,11 +66,22 @@ export interface ExposureStats {
   uniqueSessions: number;
 }
 
+export interface PurchaseStats {
+  experimentId: string;
+  variantId: string;
+  sessions: number;
+  purchases: number;
+  purchaseRate: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+  revenuePerSession: number;
+}
+
 export interface UserJourneyEvent {
   id: string;
   projectId: string;
   experimentId: string;
-  eventType: 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION' | 'CUSTOM';
+  eventType: 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION' | 'PURCHASE' | 'CUSTOM';
   sessionId: string;
   viewId: string;
   properties: any;
@@ -241,7 +252,7 @@ export const analyticsApi = {
     const transformedVariants = response.variants.map(variant => {
       const transformedSteps = variant.steps.map(step => ({
         step: step.stepName,
-        eventType: step.eventType as 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION',
+        eventType: step.eventType as 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION' | 'PURCHASE',
         count: step.count,
         percentage: step.percentage,
         dropoffRate: step.dropoffRate,
@@ -321,6 +332,28 @@ export const analyticsApi = {
       exposures: stats.exposures,
       uniqueSessions: stats.uniqueSessions,
     }));
+  },
+
+  /**
+   * Get purchase statistics for variants in an experiment
+   */
+  async getPurchaseStats(
+    projectId: string,
+    experimentId: string,
+    dateRange?: { start: string; end: string }
+  ): Promise<PurchaseStats[]> {
+    const params = new URLSearchParams();
+    if (dateRange) {
+      params.append('start', dateRange.start);
+      params.append('end', dateRange.end);
+    }
+    
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/purchases/${experimentId}${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await apiRequest<{ purchaseStats: PurchaseStats[] }>(endpoint);
+    
+    return response.purchaseStats;
   },
 
   /**
