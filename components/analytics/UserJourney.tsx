@@ -5,7 +5,7 @@ import { UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analyti
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Clock, Eye, MousePointer, Target } from 'lucide-react';
+import { ChevronRight, Clock, Eye, MousePointer, Target, DollarSign } from 'lucide-react';
 
 interface UserJourneyProps {
   data: UserJourneyEvent[];
@@ -20,6 +20,7 @@ const eventIcons = {
   EXPOSURE: Eye,
   PAGEVIEW: MousePointer,
   CONVERSION: Target,
+  PURCHASE: DollarSign,
   CUSTOM: Clock,
 };
 
@@ -27,6 +28,7 @@ const eventColors = {
   EXPOSURE: 'bg-blue-100 text-blue-800',
   PAGEVIEW: 'bg-green-100 text-green-800',
   CONVERSION: 'bg-purple-100 text-purple-800',
+  PURCHASE: 'bg-yellow-100 text-yellow-800',
   CUSTOM: 'bg-gray-100 text-gray-800',
 };
 
@@ -69,6 +71,10 @@ export function UserJourney({ data, sessions, selectedSessionId, sessionDetails,
         return `Visited ${title}`;
       case 'CONVERSION':
         return `Completed goal: ${event.properties?.goal || 'conversion'}`;
+      case 'PURCHASE':
+        const amount = event.properties?.revenue ?? event.properties?.amount;
+        const currency = event.properties?.currency || '';
+        return amount != null ? `Purchase${currency ? ` (${currency})` : ''}: ${amount}` : 'Purchase completed';
       case 'CUSTOM':
         return event.properties?.description || 'Custom event';
       default:
