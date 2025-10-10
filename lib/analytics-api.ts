@@ -466,6 +466,32 @@ export const analyticsApi = {
 
     return response;
   },
+
+  /**
+   * Reset all analytics events for an experiment
+   */
+  async resetExperimentEvents(
+    projectId: string,
+    experimentId: string
+  ): Promise<{ success: boolean; deletedCount: number; message: string }> {
+    const endpoint = `/api/analytics/experiments/${experimentId}/reset`;
+
+    const response = await fetch(`${getBaseUrl()}${endpoint}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to reset experiment events:', errorText);
+      throw new Error(`Failed to reset experiment events: ${response.status}`);
+    }
+
+    return response.json();
+  },
 };
 
 // Backward compatibility helper
@@ -566,31 +592,5 @@ export const analyticsUtils = {
       return `${(value / 1000).toFixed(1)}K`;
     }
     return value.toString();
-  },
-
-  /**
-   * Reset all analytics events for an experiment
-   */
-  async resetExperimentEvents(
-    projectId: string,
-    experimentId: string
-  ): Promise<{ success: boolean; deletedCount: number; message: string }> {
-    const endpoint = `/api/analytics/experiments/${experimentId}/reset`;
-
-    const response = await fetch(`${getBaseUrl()}${endpoint}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Failed to reset experiment events:', errorText);
-      throw new Error(`Failed to reset experiment events: ${response.status}`);
-    }
-
-    return response.json();
   },
 };
