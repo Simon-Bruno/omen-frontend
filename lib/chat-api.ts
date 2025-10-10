@@ -120,6 +120,24 @@ class ChatApiService {
   }
 
   /**
+   * Improve a variant with user feedback
+   */
+  async improveVariant(
+    jobId: string,
+    variantIndex: number,
+    projectId: string,
+    feedback: string
+  ): Promise<{ success: boolean; variant: any; improvements: string[]; confidence?: number }>{
+    return this.makeRequest(
+      `/api/jobs/${jobId}/variants/${variantIndex}/improve?projectId=${encodeURIComponent(projectId)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ feedback }),
+      }
+    );
+  }
+
+  /**
    * Poll job status until completion
    */
   async pollJobStatus(

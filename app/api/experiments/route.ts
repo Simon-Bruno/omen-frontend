@@ -34,6 +34,19 @@ const domTargetingSchema = z.object({
   rules: z.array(domTargetingRule).min(1)
 }).optional();
 
+const goalSchema = z.object({
+  name: z.string().min(1, 'Goal name is required'),
+  type: z.enum(['conversion', 'custom', 'purchase']),
+  selector: z.string().optional(),
+  eventType: z.string().optional(),
+  customJs: z.string().optional(),
+  value: z.number().optional(),
+  // Purchase-specific fields
+  valueSelector: z.string().optional(),
+  itemCountSelector: z.string().optional(),
+  currency: z.string().optional().default('USD'),
+});
+
 const createExperimentSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   oec: z.string().min(1, 'OEC is required'),
@@ -43,6 +56,7 @@ const createExperimentSchema = z.object({
   targeting: domTargetingSchema,
   hypothesis: hypothesisSchema,
   variants: z.array(variantSchema).min(1, 'At least one variant is required'),
+  goals: z.array(goalSchema).optional(),
   trafficDistribution: z.record(z.string(), z.number().min(0).max(1)).optional(),
 });
 
@@ -94,12 +108,21 @@ export async function POST(request: NextRequest) {
         timeoutMs: body.targeting.timeoutMs,
         rulesCount: Array.isArray(body.targeting.rules) ? body.targeting.rules.length : 0,
         firstRule: Array.isArray(body.targeting.rules) ? body.targeting.rules[0] : undefined
-      } : undefined
+      } : undefined,
+      hasGoals: !!body?.goals,
+      goalsCount: Array.isArray(body?.goals) ? body.goals.length : 0,
+      goalsPreview: body?.goals || []
     });
+
+    // DEBUG: Log full goals data
+    console.log('🎯 [API Proxy] Goals received from frontend:', JSON.stringify(body?.goals, null, 2));
 
     let validatedData;
     try {
       validatedData = createExperimentSchema.parse(body);
+      // DEBUG: Log what survived validation
+      console.log('✅ [API Proxy] After validation, goals:', JSON.stringify(validatedData?.goals, null, 2));
+      console.log('📦 [API Proxy] Full validated payload being sent to backend:', JSON.stringify(validatedData, null, 2));
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         console.error('❌ Proxy validation error:', validationError.issues);

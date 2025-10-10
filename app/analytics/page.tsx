@@ -14,8 +14,9 @@ import { ExposureStats } from '@/components/analytics/ExposureStats';
 import { UserJourney } from '@/components/analytics/UserJourney';
 import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
-import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
-import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus } from 'lucide-react';
+import { PurchaseStats } from '@/components/analytics/PurchaseStats';
+import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, PurchaseStats as PurchaseStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
+import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, ShoppingCart } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { isAuthenticated, isLoading, user, project } = useAuth();
@@ -23,7 +24,7 @@ export default function AnalyticsPage() {
   const router = useRouter();
   
   // State management
-  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'traffic' | 'journey'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'purchases' | 'traffic' | 'journey'>('overview');
   const [error, setError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false); // Toggle for mock vs real data
   
@@ -35,10 +36,34 @@ export default function AnalyticsPage() {
   const [funnelData, setFunnelData] = useState<NewFunnelAnalysis | null>(null);
   const [conversionData, setConversionData] = useState<ConversionRate[]>([]);
   const [exposureData, setExposureData] = useState<ExposureStatsType[]>([]);
+  const [purchaseData, setPurchaseData] = useState<PurchaseStatsType[]>([]);
   const [journeyData, setJourneyData] = useState<UserJourneyEvent[]>([]);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   
   // Mock data for demonstration (replace with real API calls)
+  const mockPurchaseData: PurchaseStatsType[] = [
+    {
+      experimentId: 'exp-123',
+      variantId: 'A',
+      sessions: 50,
+      purchases: 3,
+      purchaseRate: 0.06,
+      totalRevenue: 89.97,
+      averageOrderValue: 29.99,
+      revenuePerSession: 1.80
+    },
+    {
+      experimentId: 'exp-123',
+      variantId: 'B',
+      sessions: 48,
+      purchases: 5,
+      purchaseRate: 0.104,
+      totalRevenue: 149.95,
+      averageOrderValue: 29.99,
+      revenuePerSession: 3.12
+    }
+  ];
+
   const mockFunnelData: NewFunnelAnalysis = {
     experimentId: 'exp-123',
     variants: [
@@ -251,6 +276,7 @@ export default function AnalyticsPage() {
       setFunnelData(mockFunnelData);
       setConversionData(mockConversionData);
       setExposureData(mockExposureData);
+      setPurchaseData(mockPurchaseData);
       setJourneyData(mockJourneyData);
       setError(null);
     } else {
@@ -269,6 +295,7 @@ export default function AnalyticsPage() {
           setFunnelData(mockFunnelData);
           setConversionData(mockConversionData);
           setExposureData(mockExposureData);
+          setPurchaseData(mockPurchaseData);
           setJourneyData(mockJourneyData);
           setError('No project ID or experiment selected. Showing mock data instead.');
           setLoading(false);
@@ -276,10 +303,11 @@ export default function AnalyticsPage() {
         }
         
         // Load all data in parallel
-        const [funnel, conversions, exposures] = await Promise.all([
+        const [funnel, conversions, exposures, purchases] = await Promise.all([
           analyticsApi.getFunnelAnalysis(projectId, experimentId),
           analyticsApi.getConversionRates(projectId, experimentId),
           analyticsApi.getExposureStats(projectId, experimentId),
+          analyticsApi.getPurchaseStats(projectId, experimentId),
         ]);
         
         // Load journey data separately if we have a session selected
@@ -292,6 +320,7 @@ export default function AnalyticsPage() {
         setFunnelData(funnel);
         setConversionData(conversions);
         setExposureData(exposures);
+        setPurchaseData(purchases);
         setJourneyData(journey);
       } catch (err) {
         console.error('Failed to load analytics data:', err);
@@ -301,6 +330,7 @@ export default function AnalyticsPage() {
         setFunnelData(mockFunnelData);
         setConversionData(mockConversionData);
         setExposureData(mockExposureData);
+        setPurchaseData(mockPurchaseData);
         setJourneyData(mockJourneyData);
       } finally {
         setLoading(false);
@@ -335,6 +365,7 @@ export default function AnalyticsPage() {
     { id: 'experiments', label: 'Experiments', icon: Target },
     { id: 'funnel', label: 'Funnel Analysis', icon: TrendingUp },
     { id: 'conversions', label: 'A/B Test Results', icon: Target },
+    { id: 'purchases', label: 'Purchase Analytics', icon: ShoppingCart },
     { id: 'traffic', label: 'Traffic Overview', icon: Users },
     { id: 'journey', label: 'User Journey', icon: Calendar },
   ];
@@ -442,6 +473,8 @@ export default function AnalyticsPage() {
         return funnelData ? <FunnelChart data={funnelData} /> : <div>No funnel data available</div>;
       case 'conversions':
         return conversionData.length > 0 ? <ConversionTable data={conversionData} /> : <div>No conversion data available</div>;
+      case 'purchases':
+        return purchaseData.length > 0 ? <PurchaseStats data={purchaseData} /> : <div>No purchase data available</div>;
       case 'traffic':
         return exposureData.length > 0 ? <ExposureStats data={exposureData} /> : <div>No traffic data available</div>;
       case 'journey':
