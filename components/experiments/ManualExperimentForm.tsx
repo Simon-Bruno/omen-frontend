@@ -26,6 +26,22 @@ interface Goal {
   valueSelector?: string;
   itemCountSelector?: string;
   currency?: string;
+  // Goal-specific targeting (optional - overrides experiment targeting)
+  targetUrls?: string[];
+  targeting?: {
+    match: 'all' | 'any';
+    timeoutMs?: number;
+    rules: Array<{
+      type: 'selectorExists' | 'selectorNotExists' | 'textContains' | 'attrEquals' | 'meta' | 'cookie' | 'localStorage' | 'urlParam';
+      selector?: string;
+      text?: string;
+      attr?: string;
+      value?: string;
+      name?: string;
+      by?: 'name' | 'property';
+      key?: string;
+    }>;
+  };
 }
 
 interface ManualExperimentFormProps {

@@ -45,6 +45,9 @@ const goalSchema = z.object({
   valueSelector: z.string().optional(),
   itemCountSelector: z.string().optional(),
   currency: z.string().optional().default('USD'),
+  // Goal-specific targeting (optional - overrides experiment targeting)
+  targetUrls: z.array(z.string()).optional(),
+  targeting: domTargetingSchema,
 });
 
 const createExperimentSchema = z.object({
