@@ -16,7 +16,7 @@ import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
 import { PurchaseStats } from '@/components/analytics/PurchaseStats';
 import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, PurchaseStats as PurchaseStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
-import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, ShoppingCart } from 'lucide-react';
+import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { isAuthenticated, isLoading, user, project } = useAuth();
@@ -27,6 +27,8 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'purchases' | 'traffic' | 'journey'>('overview');
   const [error, setError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false); // Toggle for mock vs real data
+  const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   // Selection state
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -338,6 +340,37 @@ export default function AnalyticsPage() {
     }
   };
 
+  // Handle reset analytics data
+  const handleResetAnalytics = async () => {
+    if (!project?.id || !selectedExperimentId) {
+      setError('No project or experiment selected');
+      return;
+    }
+
+    setIsResetting(true);
+    setError(null);
+
+    try {
+      const result = await analyticsApi.resetExperimentEvents(project.id, selectedExperimentId);
+
+      if (result.success) {
+        // Reload data after successful reset
+        await loadData();
+        setError(null);
+        // Show success message
+        console.log(`Successfully reset analytics: ${result.message}`);
+      } else {
+        setError('Failed to reset analytics data');
+      }
+    } catch (err) {
+      console.error('Failed to reset analytics:', err);
+      setError(err instanceof Error ? err.message : 'Failed to reset analytics data');
+    } finally {
+      setIsResetting(false);
+      setShowResetConfirm(false);
+    }
+  };
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -548,6 +581,44 @@ export default function AnalyticsPage() {
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Loading...' : 'Refresh'}
               </Button>
+
+              {/* Reset Analytics Button */}
+              {selectedExperimentId && (
+                <>
+                  {showResetConfirm ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-red-600">Reset all data?</span>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleResetAnalytics}
+                        disabled={isResetting}
+                      >
+                        {isResetting ? 'Resetting...' : 'Confirm'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowResetConfirm(false)}
+                        disabled={isResetting}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowResetConfirm(true)}
+                      disabled={loading || isResetting}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Reset Data
+                    </Button>
+                  )}
+                </>
+              )}
               <Badge variant={useMockData ? "secondary" : "default"}>
                 {useMockData ? 'Mock Data' : 'Live Data'}
               </Badge>
