@@ -19,6 +19,11 @@ export const VariantsDisplay = (props: any) => {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isPolling, setIsPolling] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [feedbackByJobId, setFeedbackByJobId] = useState<Record<string, string>>({});
+  const [improvedVariantByJobId, setImprovedVariantByJobId] = useState<Record<string, any>>({});
+  const [improvementsByJobId, setImprovementsByJobId] = useState<Record<string, string[]>>({});
+  const [confidenceByJobId, setConfidenceByJobId] = useState<Record<string, number>>({});
+  const [isImprovingByJobId, setIsImprovingByJobId] = useState<Record<string, boolean>>({});
 
   // Variant jobs context
   const { addVariantJob, updateVariantJobStatus, removeVariantJob } = useVariantJobs();
@@ -262,6 +267,11 @@ export const VariantsDisplay = (props: any) => {
             ? JSON.parse(resultData.variantsSchema)
             : resultData.variantsSchema;
           realVariant = parsedData.variants?.[0];
+
+          // Prefer locally improved variant if present (merge to retain required fields)
+          if (improvedVariantByJobId[jobId]) {
+            realVariant = { ...realVariant, ...improvedVariantByJobId[jobId] };
+          }
           
           // Log screenshot data from source of truth
           if (realVariant?.screenshot) {
@@ -390,6 +400,69 @@ export const VariantsDisplay = (props: any) => {
                         <ChevronRight className="w-4 h-4" />
                       )}
                     </div>
+
+                    {!variant.isPlaceholder && (
+                      <div className="mt-3 space-y-2">
+                        <label className="block text-xs text-gray-600">Something not right? Describe the issue:</label>
+                        <textarea
+                          className="w-full text-sm border rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          rows={2}
+                          placeholder="e.g., The button is not centered"
+                          value={feedbackByJobId[jobIds[index]] || ''}
+                          onChange={(e) =>
+                            setFeedbackByJobId(prev => ({ ...prev, [jobIds[index]]: e.target.value }))
+                          }
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            className={`px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50`}
+                            disabled={!projectId || !feedbackByJobId[jobIds[index]] || isImprovingByJobId[jobIds[index]]}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const jid = jobIds[index];
+                              try {
+                                setIsImprovingByJobId(prev => ({ ...prev, [jid]: true }));
+                                const feedback = (feedbackByJobId[jid] || '').trim();
+                                if (!projectId || !feedback) return;
+                                // Each job currently returns a single variant; index 0
+                                const resp = await chatApi.improveVariant(jid, 0, projectId, feedback);
+                                if (resp?.variant) {
+                                  setImprovedVariantByJobId(prev => ({ ...prev, [jid]: resp.variant }));
+                                }
+                                if (Array.isArray(resp?.improvements)) {
+                                  setImprovementsByJobId(prev => ({ ...prev, [jid]: resp.improvements }));
+                                }
+                                if (typeof resp?.confidence === 'number') {
+                                  const conf = resp.confidence as number;
+                                  setConfidenceByJobId(prev => ({ ...prev, [jid]: conf }));
+                                }
+                              } catch (err) {
+                                console.error('Failed to improve variant', err);
+                              } finally {
+                                setIsImprovingByJobId(prev => ({ ...prev, [jid]: false }));
+                              }
+                            }}
+                          >
+                            {isImprovingByJobId[jobIds[index]] ? 'Improving…' : 'Submit feedback'}
+                          </button>
+
+                          {typeof confidenceByJobId[jobIds[index]] === 'number' && (
+                            <span className="text-xs text-gray-500">Confidence: {(confidenceByJobId[jobIds[index]] * 100).toFixed(0)}%</span>
+                          )}
+                        </div>
+
+                        {Array.isArray(improvementsByJobId[jobIds[index]]) && improvementsByJobId[jobIds[index]].length > 0 && (
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium">Improvements:</span>
+                            <ul className="list-disc ml-4 mt-1 space-y-0.5">
+                              {improvementsByJobId[jobIds[index]].map((imp, i) => (
+                                <li key={i}>{imp}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </Card>
               </div>

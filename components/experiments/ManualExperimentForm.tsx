@@ -15,6 +15,19 @@ interface Variant {
   position: 'INNER' | 'OUTER' | 'BEFORE' | 'AFTER' | 'APPEND' | 'PREPEND';
 }
 
+interface Goal {
+  name: string;
+  type: 'conversion' | 'custom' | 'purchase';
+  selector?: string;
+  eventType?: string;
+  customJs?: string;
+  value?: number;
+  // Purchase-specific fields
+  valueSelector?: string;
+  itemCountSelector?: string;
+  currency?: string;
+}
+
 interface ManualExperimentFormProps {
   onSuccess?: (experimentId: string) => void;
   onCancel?: () => void;
@@ -47,6 +60,9 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
   const [useCustomTraffic, setUseCustomTraffic] = useState(false);
   const [trafficDistribution, setTrafficDistribution] = useState<Record<string, number>>({});
 
+  // Goals state
+  const [goals, setGoals] = useState<Goal[]>([]);
+
   const addVariant = () => {
     const nextId = String.fromCharCode(65 + variants.length); // A, B, C, etc.
     setVariants([...variants, {
@@ -67,6 +83,25 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
     const updated = [...variants];
     updated[index] = { ...updated[index], [field]: value };
     setVariants(updated);
+  };
+
+  const addGoal = () => {
+    setGoals([...goals, {
+      name: '',
+      type: 'conversion',
+      selector: '',
+      eventType: 'click',
+    }]);
+  };
+
+  const removeGoal = (index: number) => {
+    setGoals(goals.filter((_, i) => i !== index));
+  };
+
+  const updateGoal = (index: number, field: keyof Goal, value: any) => {
+    const updated = [...goals];
+    updated[index] = { ...updated[index], [field]: value };
+    setGoals(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,7 +129,12 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
           js: v.js || undefined,
           position: v.position || 'INNER',
         })),
+        goals: goals.filter(g => g.name), // Only include goals with names
       };
+
+      // DEBUG: Log the payload being sent
+      console.log('🚀 [ManualExperimentForm] Sending payload:', JSON.stringify(payload, null, 2));
+      console.log('🎯 [ManualExperimentForm] Goals being sent:', goals.filter(g => g.name));
 
       // Add optional fields
       if (targetUrls.trim()) {
@@ -445,6 +485,196 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
               </div>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Goals - Universal conversion tracking */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Conversion Goals</CardTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Define conversion events that apply to ALL variants (including control)
+            </p>
+          </div>
+          <Button type="button" onClick={addGoal} size="sm" variant="outline">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Goal
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {goals.length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              No goals defined. Add goals to track conversions consistently across all variants.
+            </p>
+          ) : (
+            goals.map((goal, index) => (
+              <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900">Goal {index + 1}</h4>
+                  <Button
+                    type="button"
+                    onClick={() => removeGoal(index)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Goal Name *
+                    </label>
+                    <Input
+                      type="text"
+                      value={goal.name}
+                      onChange={(e) => updateGoal(index, 'name', e.target.value)}
+                      placeholder="e.g., signup_click, add_to_cart"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Used in analytics to identify this conversion
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Event Type
+                    </label>
+                    <select
+                      value={goal.type}
+                      onChange={(e) => updateGoal(index, 'type', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="conversion">Conversion Event</option>
+                      <option value="custom">Custom Event</option>
+                      <option value="purchase">Purchase Event</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Conversion events count toward conversion rate
+                    </p>
+                  </div>
+                </div>
+
+                {/* DOM-based tracking */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Element Selector (optional)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      type="text"
+                      value={goal.selector || ''}
+                      onChange={(e) => updateGoal(index, 'selector', e.target.value)}
+                      placeholder="e.g., button.signup, #checkout-btn"
+                    />
+                    <select
+                      value={goal.eventType || 'click'}
+                      onChange={(e) => updateGoal(index, 'eventType', e.target.value)}
+                      disabled={!goal.selector}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="click">Click</option>
+                      <option value="submit">Submit</option>
+                      <option value="change">Change</option>
+                      <option value="focus">Focus</option>
+                      <option value="blur">Blur</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Track when users interact with specific elements
+                  </p>
+                </div>
+
+                {/* Custom JavaScript */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Custom JavaScript Condition (optional)
+                  </label>
+                  <textarea
+                    value={goal.customJs || ''}
+                    onChange={(e) => updateGoal(index, 'customJs', e.target.value)}
+                    placeholder="e.g., window.scrollY > 1000 || document.querySelector('.video').currentTime > 30"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    JavaScript expression that returns true when goal should fire
+                  </p>
+                </div>
+
+                {/* Optional value */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Goal Value (optional)
+                  </label>
+                  <Input
+                    type="number"
+                    value={goal.value || ''}
+                    onChange={(e) => updateGoal(index, 'value', parseFloat(e.target.value) || undefined)}
+                    placeholder="e.g., 10.00"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Numeric value for this conversion (e.g., cart value, progress %)
+                  </p>
+                </div>
+
+                {/* Purchase-specific fields */}
+                {goal.type === 'purchase' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Value Selector (required for purchase)
+                      </label>
+                      <Input
+                        type="text"
+                        value={goal.valueSelector || ''}
+                        onChange={(e) => updateGoal(index, 'valueSelector', e.target.value)}
+                        placeholder="e.g., .total-price, #order-total"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        CSS selector to extract purchase value from DOM
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Item Count Selector (optional)
+                      </label>
+                      <Input
+                        type="text"
+                        value={goal.itemCountSelector || ''}
+                        onChange={(e) => updateGoal(index, 'itemCountSelector', e.target.value)}
+                        placeholder="e.g., .item-count, #quantity"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        CSS selector to extract number of items purchased
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Currency
+                      </label>
+                      <Input
+                        type="text"
+                        value={goal.currency || 'USD'}
+                        onChange={(e) => updateGoal(index, 'currency', e.target.value)}
+                        placeholder="USD"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Currency code for the purchase (default: USD)
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

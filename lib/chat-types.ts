@@ -73,11 +73,13 @@ export interface Variant {
   implementation_notes: string;
   css_code: string;
   html_code: string;
+  javascript_code?: string;
   injection_method: 'selector' | 'new_element' | 'modify_existing';
   target_selector?: string;
   new_element_html?: string;
   implementation_instructions: string;
   screenshot?: string; // Screenshot path (e.g., "/screenshots/db/cmg3def456ghi789") or data URL
+  improvement_notes?: string[];
 }
 
 // Job Types
