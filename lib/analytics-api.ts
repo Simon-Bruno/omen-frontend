@@ -478,9 +478,6 @@ export const analyticsApi = {
 
     const response = await fetch(`${getBaseUrl()}${endpoint}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       credentials: 'include',
     });
 

@@ -12,7 +12,6 @@ export async function DELETE(
     const response = await fetch(`${backendUrl}/api/analytics/experiments/${experimentId}/reset`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '',
       },
       credentials: 'include',
