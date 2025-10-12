@@ -3,13 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { BrandAnalysisFunctionCallResponse, BrandAnalysisResponse } from "@/lib/chat-types";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 
 export const BrandAnalysisDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [revealStage, setRevealStage] = useState(0);
+  const hasAnimated = useRef(false);
   const isLoading = status.type === "running";
   const isCompleted = status.type === "complete";
   const hasError = status.type === "incomplete";
@@ -30,6 +32,26 @@ export const BrandAnalysisDisplay = (props: any) => {
       console.error("Failed to parse brand analysis result:", e);
     }
   }
+
+  // Progressive reveal animation - only run once when component first appears
+  useEffect(() => {
+    if (isCompleted && brandAnalysisData && !hasAnimated.current) {
+      hasAnimated.current = true;
+      const stages = [
+        { delay: 0, stage: 1 },      // Header and description
+        { delay: 300, stage: 2 },    // Personality words
+        { delay: 600, stage: 3 },    // Chart and colors
+        { delay: 900, stage: 4 },    // Full reveal
+      ];
+
+      stages.forEach(({ delay, stage }) => {
+        setTimeout(() => setRevealStage(stage), delay);
+      });
+    } else if (isLoading) {
+      setRevealStage(0);
+      hasAnimated.current = false;
+    }
+  }, [isCompleted, isLoading, brandAnalysisData]);
 
   // Handle error state - no brand analysis found
   if (isCompleted && functionCallResponse && !functionCallResponse.success) {
@@ -118,27 +140,53 @@ export const BrandAnalysisDisplay = (props: any) => {
           </div>
         </div>
 
-        <p className="max-w-3xl text-muted-foreground">
+        <motion.p 
+          className="max-w-3xl text-muted-foreground"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ 
+            opacity: revealStage >= 1 ? 1 : 0, 
+            y: revealStage >= 1 ? 0 : 10 
+          }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
           {brandAnalysisData && brandAnalysisData.brand_description && (
             <span className="text-foreground/90">
               {brandAnalysisData.brand_description}
             </span>
           )}
-        </p>
+        </motion.p>
 
         {brandAnalysisData && (
           // Handle both correct structure and current incorrect structure where personality_words is nested
           (brandAnalysisData.brand_personality_words || brandAnalysisData.brand_trait_scores?.brand_personality_words) && (
-            <div className="flex flex-wrap items-center -mt-1 text-lg font-medium text-foreground/90">
+            <motion.div 
+              className="flex flex-wrap items-center -mt-1 text-lg font-medium text-foreground/90"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ 
+                opacity: revealStage >= 2 ? 1 : 0, 
+                y: revealStage >= 2 ? 0 : 10 
+              }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+            >
               {(brandAnalysisData.brand_personality_words || brandAnalysisData.brand_trait_scores?.brand_personality_words || []).map((word, index) => (
-                <span
+                <motion.span
                   key={word}
                   className="before:content-['•'] before:mx-2 first:before:hidden"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ 
+                    opacity: revealStage >= 2 ? 1 : 0, 
+                    scale: revealStage >= 2 ? 1 : 0.8 
+                  }}
+                  transition={{ 
+                    duration: 0.3, 
+                    ease: "easeOut", 
+                    delay: 0.2 + (index * 0.1) 
+                  }}
                 >
                   {word}
-                </span>
+                </motion.span>
               ))}
-            </div>
+            </motion.div>
           )
         )}
       </CardHeader>
@@ -154,10 +202,36 @@ export const BrandAnalysisDisplay = (props: any) => {
             style={{ overflow: "hidden" }}
           >
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <motion.div 
+                className="grid grid-cols-1 gap-6 md:grid-cols-3"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ 
+                  opacity: revealStage >= 3 ? 1 : 0, 
+                  y: revealStage >= 3 ? 0 : 20 
+                }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
                 <div className="md:col-span-2">
-                  <div className="text-xl font-semibold">Brand Archetype</div>
-                  <div className="mt-3 h-80 pointer-events-none">
+                  <motion.div 
+                    className="text-xl font-semibold"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ 
+                      opacity: revealStage >= 3 ? 1 : 0, 
+                      x: revealStage >= 3 ? 0 : -20 
+                    }}
+                    transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                  >
+                    Brand Archetype
+                  </motion.div>
+                  <motion.div 
+                    className="mt-3 h-80 pointer-events-none"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ 
+                      opacity: revealStage >= 3 ? 1 : 0, 
+                      scale: revealStage >= 3 ? 1 : 0.95 
+                    }}
+                    transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                  >
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart
                         data={brandAnalysisData ? [
@@ -207,24 +281,62 @@ export const BrandAnalysisDisplay = (props: any) => {
                         />
                       </RadarChart>
                     </ResponsiveContainer>
-                  </div>
+                  </motion.div>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <div className="text-xl font-semibold">Extracted Colors</div>
-                  <div className="mt-2 flex flex-col gap-3">
+                  <motion.div 
+                    className="text-xl font-semibold"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ 
+                      opacity: revealStage >= 3 ? 1 : 0, 
+                      x: revealStage >= 3 ? 0 : 20 
+                    }}
+                    transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
+                  >
+                    Extracted Colors
+                  </motion.div>
+                  <motion.div 
+                    className="mt-2 flex flex-col gap-3"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: revealStage >= 3 ? 1 : 0, 
+                      y: revealStage >= 3 ? 0 : 10 
+                    }}
+                    transition={{ duration: 0.4, ease: "easeOut", delay: 0.4 }}
+                  >
                     {brandAnalysisData && brandAnalysisData.brand_colors ? (
                       brandAnalysisData.brand_colors.map((color, index) => (
-                        <div key={`${color.color}-${index}`} className="flex items-center gap-4">
-                          <div
+                        <motion.div 
+                          key={`${color.color}-${index}`} 
+                          className="flex items-center gap-4"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ 
+                            opacity: revealStage >= 3 ? 1 : 0, 
+                            x: revealStage >= 3 ? 0 : 20 
+                          }}
+                          transition={{ 
+                            duration: 0.3, 
+                            ease: "easeOut", 
+                            delay: 0.5 + (index * 0.1) 
+                          }}
+                        >
+                          <motion.div
                             className="size-8 rounded-md border border-gray-200"
                             style={{ backgroundColor: color.hex_code }}
-                          ></div>
+                            initial={{ scale: 0 }}
+                            animate={{ scale: revealStage >= 3 ? 1 : 0 }}
+                            transition={{ 
+                              duration: 0.3, 
+                              ease: "easeOut", 
+                              delay: 0.6 + (index * 0.1) 
+                            }}
+                          />
                           <div className="flex flex-col">
                             <span className="text-base text-foreground/80 font-medium">{color.color}</span>
                             <span className="text-xs text-foreground/60">{color.usage_type}</span>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     ) : (
                       [
@@ -232,16 +344,38 @@ export const BrandAnalysisDisplay = (props: any) => {
                         { name: "Snow", className: "bg-white border" },
                         { name: "Gray", className: "bg-neutral-600" },
                         { name: "Tomato", className: "bg-rose-500" },
-                      ].map((c) => (
-                        <div key={c.name} className="flex items-center gap-4">
-                          <div className={`size-8 rounded-md ${c.className}`}></div>
+                      ].map((c, index) => (
+                        <motion.div 
+                          key={c.name} 
+                          className="flex items-center gap-4"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ 
+                            opacity: revealStage >= 3 ? 1 : 0, 
+                            x: revealStage >= 3 ? 0 : 20 
+                          }}
+                          transition={{ 
+                            duration: 0.3, 
+                            ease: "easeOut", 
+                            delay: 0.5 + (index * 0.1) 
+                          }}
+                        >
+                          <motion.div 
+                            className={`size-8 rounded-md ${c.className}`}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: revealStage >= 3 ? 1 : 0 }}
+                            transition={{ 
+                              duration: 0.3, 
+                              ease: "easeOut", 
+                              delay: 0.6 + (index * 0.1) 
+                            }}
+                          />
                           <span className="text-base text-foreground/80">{c.name}</span>
-                        </div>
+                        </motion.div>
                       ))
                     )}
-                  </div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
             </CardContent>
           </motion.div>
         )}

@@ -1,6 +1,31 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -158,5 +183,83 @@
     .dark * {
       scrollbar-color: oklch(0.705 0.015 286.067 / 25%) transparent;
     }
+  }
+
+  /* Streaming text optimizations */
+  .aui-md {
+    /* Enable hardware acceleration for smoother rendering */
+    transform: translateZ(0);
+    will-change: contents;
+    /* Optimize text rendering */
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Reduce layout thrashing during streaming */
+    contain: layout style;
+  }
+
+  /* Smooth text streaming animations */
+  .aui-md p {
+    /* Prevent layout shifts during streaming */
+    min-height: 1.2em;
+    /* Slower, smoother transitions for text changes */
+    transition: opacity 0.3s ease-out, transform 0.2s ease-out;
+    /* Add a subtle delay to make streaming feel more natural */
+    animation: textReveal 0.1s ease-out;
+  }
+
+  /* Keyframe animation for text reveal */
+  @keyframes textReveal {
+    from {
+      opacity: 0.7;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Optimize assistant message rendering */
+  [data-role="assistant"] {
+    /* Enable GPU acceleration */
+    transform: translateZ(0);
+    /* Optimize repaints during streaming */
+    contain: layout style paint;
+  }
+
+  /* Smooth scrolling for chat viewport */
+  [data-aui="thread-viewport"] {
+    /* Enable smooth scrolling */
+    scroll-behavior: smooth;
+    /* Optimize scrolling performance */
+    -webkit-overflow-scrolling: touch;
+    /* Reduce repaints during scroll */
+    contain: layout style;
+  }
+
+  /* Optimize markdown text rendering */
+  .aui-md h1, .aui-md h2, .aui-md h3, .aui-md h4, .aui-md h5, .aui-md h6 {
+    /* Prevent layout shifts */
+    min-height: 1.2em;
+    /* Smooth font loading */
+    font-display: swap;
+  }
+
+  /* Optimize code blocks during streaming */
+  .aui-md pre, .aui-md code {
+    /* Prevent layout shifts */
+    min-height: 1.2em;
+    /* Optimize font rendering */
+    font-variant-ligatures: none;
+    text-rendering: optimizeSpeed;
+  }
+
+  /* Reduce jank during streaming updates */
+  .aui-md * {
+    /* Prevent unnecessary repaints */
+    backface-visibility: hidden;
+    /* Optimize transforms */
+    transform: translateZ(0);
   }
 }

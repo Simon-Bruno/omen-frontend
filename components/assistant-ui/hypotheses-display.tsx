@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, Loader2, TrendingUp, Activity, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -10,12 +10,42 @@ import { AnimatePresence, motion } from "framer-motion";
 export const HypothesesDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [revealStage, setRevealStage] = useState(0);
+  const hasAnimated = useRef(false);
+  const isLoading = status.type === "running";
+  const isCompleted = status.type === "complete";
+  const hasError = status.type === "incomplete";
 
+  // Progressive reveal animation - only run once when component first appears
+  useEffect(() => {
+    if (isCompleted && result && !hasAnimated.current) {
+      hasAnimated.current = true;
+      const stages = [
+        { delay: 0, stage: 1 },      // Header and title
+        { delay: 300, stage: 2 },    // Description
+        { delay: 600, stage: 3 },    // Performance metrics
+        { delay: 900, stage: 4 },    // Problem and reasoning
+        { delay: 1200, stage: 5 },   // Full reveal
+      ];
+
+      stages.forEach(({ delay, stage }) => {
+        setTimeout(() => setRevealStage(stage), delay);
+      });
+    } else if (isLoading) {
+      setRevealStage(0);
+      hasAnimated.current = false;
+    }
+  }, [isCompleted, isLoading, result]);
 
   // Handle the different statuses of the tool call
   if (status.type === "running") {
     return (
-      <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-4 w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-4 w-full">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -62,6 +92,7 @@ export const HypothesesDisplay = (props: any) => {
           <p className="max-w-3xl text-muted-foreground">Generating hypotheses based on the brand analysis and goals.</p>
         </CardHeader>
       </Card>
+      </motion.div>
     );
   }
 
@@ -127,16 +158,44 @@ export const HypothesesDisplay = (props: any) => {
                   </Button>
                 </div>
               </div>
-              <div className="max-w-3xl text-muted-foreground">
+              <motion.div 
+                className="max-w-3xl text-muted-foreground"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ 
+                  opacity: revealStage >= 1 ? 1 : 0, 
+                  y: revealStage >= 1 ? 0 : 10 
+                }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
                 {primaryHypothesis ? (
                   <div className="space-y-2">
-                    <span className="text-foreground/90 font-semibold text-lg">{primaryHypothesis.title}</span>
-                    <p className="text-foreground/80">{primaryHypothesis.description}</p>
+                    <motion.span 
+                      className="text-foreground/90 font-semibold text-lg"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ 
+                        opacity: revealStage >= 1 ? 1 : 0, 
+                        x: revealStage >= 1 ? 0 : -20 
+                      }}
+                      transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                    >
+                      {primaryHypothesis.title}
+                    </motion.span>
+                    <motion.p 
+                      className="text-foreground/80"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ 
+                        opacity: revealStage >= 2 ? 1 : 0, 
+                        y: revealStage >= 2 ? 0 : 10 
+                      }}
+                      transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+                    >
+                      {primaryHypothesis.description}
+                    </motion.p>
                   </div>
                 ) : (
                   <span className="text-foreground/90">No hypotheses generated.</span>
                 )}
-              </div>
+              </motion.div>
             </CardHeader>
             <AnimatePresence initial={false} mode="wait">
               {!isCollapsed && (
@@ -149,20 +208,52 @@ export const HypothesesDisplay = (props: any) => {
                   style={{ overflow: "hidden" }}
                 >
                   <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 items-center text-center">
-                      <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200 first:md:border-l-0">
+                    <motion.div 
+                      className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 items-center text-center"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: revealStage >= 3 ? 1 : 0, 
+                        y: revealStage >= 3 ? 0 : 20 
+                      }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                      <motion.div 
+                        className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200 first:md:border-l-0"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ 
+                          opacity: revealStage >= 3 ? 1 : 0, 
+                          scale: revealStage >= 3 ? 1 : 0.9 
+                        }}
+                        transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                      >
                         <div className="text-2xl font-semibold leading-none tracking-tight text-slate-900">
                           {primaryHypothesis?.primary_outcome || "Primary outcome"}
                         </div>
                         <div className="mt-2 text-sm text-slate-500">Primary outcome</div>
-                      </div>
-                      <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200">
+                      </motion.div>
+                      <motion.div 
+                        className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ 
+                          opacity: revealStage >= 3 ? 1 : 0, 
+                          scale: revealStage >= 3 ? 1 : 0.9 
+                        }}
+                        transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+                      >
                         <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-slate-900">
                           {primaryHypothesis?.baseline_performance ? `${(primaryHypothesis.baseline_performance).toFixed(1)}%` : "N/A"}
                         </div>
                         <div className="mt-2 text-sm text-slate-500">Current performance</div>
-                      </div>
-                      <div className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200">
+                      </motion.div>
+                      <motion.div 
+                        className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ 
+                          opacity: revealStage >= 3 ? 1 : 0, 
+                          scale: revealStage >= 3 ? 1 : 0.9 
+                        }}
+                        transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
+                      >
                         <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-green-600">
                           {primaryHypothesis?.predicted_lift_range ? 
                             `+${Math.round(primaryHypothesis.predicted_lift_range.min * 100)}–${Math.round(primaryHypothesis.predicted_lift_range.max * 100)}%` : 
@@ -170,36 +261,99 @@ export const HypothesesDisplay = (props: any) => {
                           }
                         </div>
                         <div className="mt-2 text-sm text-slate-500">Expected increase</div>
-                      </div>
-                    </div>
+                      </motion.div>
+                    </motion.div>
 
-                    <Separator />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ 
+                        opacity: revealStage >= 3 ? 1 : 0, 
+                        scale: revealStage >= 3 ? 1 : 0.95 
+                      }}
+                      transition={{ duration: 0.4, ease: "easeOut", delay: 0.4 }}
+                    >
+                      <Separator />
+                    </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-fit mx-auto">
-                      <div className="flex flex-col gap-2">
+                    <motion.div 
+                      className="grid grid-cols-1 md:grid-cols-2 gap-6 w-fit mx-auto"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: revealStage >= 4 ? 1 : 0, 
+                        y: revealStage >= 4 ? 0 : 20 
+                      }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                      <motion.div 
+                        className="flex flex-col gap-2"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ 
+                          opacity: revealStage >= 4 ? 1 : 0, 
+                          x: revealStage >= 4 ? 0 : -20 
+                        }}
+                        transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                      >
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="size-4 text-rose-600" />
                           <span className="text-sm font-semibold text-slate-800">Current problem</span>
                         </div>
-                        <div className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2">
+                        <motion.div 
+                          className="flex items-center justify-between rounded-md border border-gray-200 bg-rose-50 px-3 py-2"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ 
+                            opacity: revealStage >= 4 ? 1 : 0, 
+                            scale: revealStage >= 4 ? 1 : 0.95 
+                          }}
+                          transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
+                        >
                           <span className="text-sm text-rose-800">{primaryHypothesis?.current_problem || "No problem identified"}</span>
-                        </div>
-                      </div>
+                        </motion.div>
+                      </motion.div>
 
-                      <div className="flex flex-col gap-2">
+                      <motion.div 
+                        className="flex flex-col gap-2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ 
+                          opacity: revealStage >= 4 ? 1 : 0, 
+                          x: revealStage >= 4 ? 0 : 20 
+                        }}
+                        transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
+                      >
                         <div className="flex items-center gap-2">
                           <Activity className="size-4 text-emerald-600" />
                           <span className="text-sm font-semibold text-slate-800">Why this experiment should work</span>
                         </div>
-                        <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
+                        <motion.ul 
+                          className="list-disc pl-5 space-y-1 text-sm text-slate-700"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ 
+                            opacity: revealStage >= 4 ? 1 : 0, 
+                            y: revealStage >= 4 ? 0 : 10 
+                          }}
+                          transition={{ duration: 0.4, ease: "easeOut", delay: 0.4 }}
+                        >
                           {primaryHypothesis?.why_it_works?.map((reason: { reason: string }, index: number) => (
-                            <li key={index}>{reason.reason}</li>
+                            <motion.li 
+                              key={index}
+                              initial={{ opacity: 0, x: 10 }}
+                              animate={{ 
+                                opacity: revealStage >= 4 ? 1 : 0, 
+                                x: revealStage >= 4 ? 0 : 10 
+                              }}
+                              transition={{ 
+                                duration: 0.3, 
+                                ease: "easeOut", 
+                                delay: 0.5 + (index * 0.1) 
+                              }}
+                            >
+                              {reason.reason}
+                            </motion.li>
                           )) || (
                             <li>No reasons provided for this hypothesis.</li>
                           )}
-                        </ul>
-                      </div>
-                    </div>
+                        </motion.ul>
+                      </motion.div>
+                    </motion.div>
                   </CardContent>
                 </motion.div>
               )}
@@ -236,7 +390,12 @@ export const HypothesesDisplay = (props: any) => {
   // Handle incomplete status (error, abort, timeout, etc.)
   if (status.type === "incomplete") {
     return (
-      <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
         <CardHeader className="gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -257,12 +416,18 @@ export const HypothesesDisplay = (props: any) => {
           </CardContent>
         )}
       </Card>
+      </motion.div>
     );
   }
 
   // Fallback for any other states
   return (
-    <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -298,5 +463,6 @@ export const HypothesesDisplay = (props: any) => {
         <p className="max-w-3xl text-muted-foreground">Awaiting hypotheses generation.</p>
       </CardHeader>
     </Card>
+    </motion.div>
   );
 };
