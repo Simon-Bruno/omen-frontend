@@ -50,12 +50,43 @@ export async function POST(request: NextRequest) {
         headers.set('Content-Type', upstream.headers.get('Content-Type') ?? 'text/plain; charset=utf-8');
         headers.set('Cache-Control', 'no-cache');
         headers.set('Connection', 'keep-alive');
-        // disable buffering if your hosting/proxy supports it
-        if (upstream.headers.get('X-Accel-Buffering')) {
-            headers.set('X-Accel-Buffering', upstream.headers.get('X-Accel-Buffering')!);
-        }
+        // Disable buffering for smoother streaming
+        headers.set('X-Accel-Buffering', 'no');
+        headers.set('Transfer-Encoding', 'chunked');
+        // Add headers to prevent proxy buffering
+        headers.set('X-Content-Type-Options', 'nosniff');
+        headers.set('X-Frame-Options', 'DENY');
+        
+        // Create a readable stream that forwards data immediately
+        const stream = new ReadableStream({
+            start(controller) {
+                const reader = upstream.body?.getReader();
+                if (!reader) {
+                    controller.close();
+                    return;
+                }
 
-        return new Response(upstream.body, { headers, status: 200 });
+                const pump = async () => {
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) {
+                                controller.close();
+                                break;
+                            }
+                            controller.enqueue(value);
+                        }
+                    } catch (error) {
+                        console.error('Stream error:', error);
+                        controller.error(error);
+                    }
+                };
+
+                pump();
+            }
+        });
+
+        return new Response(stream, { headers, status: 200 });
     } catch (e) {
         console.error(e);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,17 +1,21 @@
 import { Card } from "@/components/ui/card";
 import { Sparkles, CheckCircle, ChevronRight, Zap, Image, Eye, X, AlertCircle, Clock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Variant, JobStatus } from "@/lib/chat-types";
 import { chatApi } from "@/lib/chat-api";
 import { getScreenshotUrl } from "@/lib/utils";
 import { useVariantJobs } from "@/contexts/variant-jobs-context";
+import { motion } from "framer-motion";
 
 export const VariantsDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
   
-  // Simple modal state
+  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   
   // Job and variant data
   const [jobIds, setJobIds] = useState<string[]>([]);
@@ -27,6 +31,7 @@ export const VariantsDisplay = (props: any) => {
 
   // Variant jobs context
   const { addVariantJob, updateVariantJobStatus, removeVariantJob } = useVariantJobs();
+
 
   // ScreenshotImage component with error handling
   const ScreenshotImage = ({ 
@@ -109,6 +114,18 @@ export const VariantsDisplay = (props: any) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedVariant(null);
+  };
+
+  // Handle feedback modal
+  const openFeedbackModal = (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedJobId(jobId);
+    setIsFeedbackModalOpen(true);
+  };
+
+  const closeFeedbackModal = () => {
+    setIsFeedbackModalOpen(false);
+    setSelectedJobId(null);
   };
 
   // Extract jobIds from function call result
@@ -201,33 +218,6 @@ export const VariantsDisplay = (props: any) => {
     }
   };
 
-  // Handle function call running state
-  if (status.type === "running") {
-    return (
-      <div data-stage="variants" data-function-call="generate_variants" className="mb-4 flex w-full flex-col gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 py-4">
-        <div className="flex items-center gap-3 px-4">
-          <div className="relative">
-            <Sparkles className="size-5 animate-pulse text-blue-600" />
-            <div className="absolute inset-0 animate-ping">
-              <Sparkles className="size-5 text-blue-400 opacity-75" />
-            </div>
-          </div>
-          <div>
-            <p className="text-blue-800 font-medium">Preparing variants...</p>
-            <p className="text-blue-600 text-sm">Setting up testable variations for your hypothesis</p>
-          </div>
-        </div>
-        <div className="px-4">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Handle function call incomplete state
   if (status.type === "incomplete") {
     return (
@@ -249,14 +239,15 @@ export const VariantsDisplay = (props: any) => {
     );
   }
 
-  // Handle job polling/completion state
-  if (status.type === "complete" && jobIds.length > 0) {
-    // Create loading placeholders for each job
-    const loadingVariants = jobIds.map((jobId, index) => {
-      const jobStatus = jobStatuses[jobId];
-      const isCompleted = jobStatus?.status === 'completed';
-      const isFailed = jobStatus?.status === 'failed';
-      const progress = jobStatus?.progress || 0;
+  // Unified variant display - handles both running state and job polling
+  if (status.type === "running" || (status.type === "complete" && jobIds.length > 0)) {
+    // Create variants - either from jobIds or placeholder data
+    const loadingVariants = jobIds.length > 0 
+      ? jobIds.map((jobId, index) => {
+          const jobStatus = jobStatuses[jobId];
+          const isCompleted = jobStatus?.status === 'completed';
+          const isFailed = jobStatus?.status === 'failed';
+          const progress = jobStatus?.progress || 0;
 
       // If completed, try to find the real variant data
       let realVariant = null;
@@ -300,7 +291,7 @@ export const VariantsDisplay = (props: any) => {
 
       return {
         variant_label: `Variant ${index + 1}`,
-        description: isCompleted ? 'Loading...' : isFailed ? 'Failed to generate' : `Generating... ${progress}%`,
+        description: isCompleted ? 'Loading...' : isFailed ? 'Failed to generate' : 'Generating...',
         rationale: isCompleted ? 'Processing complete' : isFailed ? 'Generation failed' : 'Creating your variant',
         screenshot: null,
         css_code: '',
@@ -316,161 +307,175 @@ export const VariantsDisplay = (props: any) => {
         isFailed,
         progress
       };
-    });
+        })
+      : [
+          // Placeholder variants when we don't have jobIds yet
+          {
+            variant_label: "Variant 1",
+            description: "Generating...",
+            rationale: "Creating your first variant",
+            screenshot: null,
+            css_code: '',
+            html_code: '',
+            target_selector: '',
+            injection_method: '',
+            new_element_html: '',
+            implementation_notes: '',
+            accessibility_consideration: '',
+            implementation_instructions: '',
+            isPlaceholder: true,
+            isCompleted: false,
+            isFailed: false,
+            progress: 8
+          },
+          {
+            variant_label: "Variant 2", 
+            description: "Generating...",
+            rationale: "Creating your second variant",
+            screenshot: null,
+            css_code: '',
+            html_code: '',
+            target_selector: '',
+            injection_method: '',
+            new_element_html: '',
+            implementation_notes: '',
+            accessibility_consideration: '',
+            implementation_instructions: '',
+            isPlaceholder: true,
+            isCompleted: false,
+            isFailed: false,
+            progress: 5
+          },
+          {
+            variant_label: "Variant 3",
+            description: "Generating...",
+            rationale: "Creating your third variant", 
+            screenshot: null,
+            css_code: '',
+            html_code: '',
+            target_selector: '',
+            injection_method: '',
+            new_element_html: '',
+            implementation_notes: '',
+            accessibility_consideration: '',
+            implementation_instructions: '',
+            isPlaceholder: true,
+            isCompleted: false,
+            isFailed: false,
+            progress: 10
+          }
+        ];
 
     return (
       <>
         <div data-stage="variants" data-function-call="generate_variants" className="mb-4 mt-2 w-full">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <motion.div
+            className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
             {loadingVariants.map((variant, index) => (
-              <div
-                key={`loading-${index}`} 
-                className={`relative overflow-hidden transition-all duration-300 border rounded-lg ${
-                  variant.isPlaceholder 
-                    ? (variant.isCompleted 
-                        ? 'opacity-100' 
-                        : variant.isFailed 
-                          ? 'opacity-60' 
+              <motion.div
+                key={`variant-${index}`}
+                className={`group relative overflow-hidden transition-all duration-300 my-1 ${
+                  variant.isPlaceholder
+                    ? (variant.isCompleted
+                        ? 'opacity-100'
+                        : variant.isFailed
+                          ? 'opacity-60'
                           : 'opacity-50')
-                    : 'hover:shadow-lg hover:scale-105'
+                    : 'hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1'
                 } ${(variant.isPlaceholder && !variant.isCompleted) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                  opacity: 1,
+                  y: 0
+                }}
+                transition={{
+                  duration: 0.3,
+                  ease: "easeOut",
+                  delay: index * 0.05
+                }}
                 onClick={() => {
                   if (!variant.isPlaceholder || variant.isCompleted) {
                     // Find the jobId for this variant (it's the index in the jobIds array)
-                    const jobId = jobIds[index];
+                    const jobId = jobIds.length > 0 ? jobIds[index] : undefined;
                     handleVariantClick(variant, jobId);
                   }
                 }}
               >
                 {/* Loading overlay - only for placeholders */}
                 {variant.isPlaceholder && !variant.isCompleted && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600">{variant.description}</p>
+                  <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl">
+                    <div className="text-center px-4">
+                      <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-sm font-medium text-gray-700 mb-3 leading-relaxed">{variant.description}</p>
+                      <div className="w-32 h-1.5 bg-gray-200 rounded-full overflow-hidden mx-auto">
+                        <div 
+                          className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                          style={{ width: `${variant.progress}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
 
-                <Card className="h-full">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 text-sm">
+                <Card className="h-full border border-gray-200 shadow-sm bg-gradient-to-br from-white to-gray-50/50 hover:shadow-lg hover:border-gray-300 transition-all duration-300 flex flex-col">
+                  <div className="p-4 flex-1 flex flex-col">
+                    {/* Header - Fixed height to ensure alignment */}
+                    <div className="h-16 mb-4 flex items-start">
+                      <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-3">
                         {variant.variant_label}
                       </h3>
-                      {/* {!variant.isPlaceholder && variant.screenshot && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                          </div>
-                          <Eye className="w-4 h-4 text-gray-400" />
-                        </div>
-                      )} */}
                     </div>
-                    
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {variant.description}
-                    </p>
 
-                    {/* {variant.screenshot && (
-                      <div className="mb-3">
-                        <ScreenshotImage
-                          screenshotPath={variant.screenshot}
-                          alt={`Screenshot of ${variant.variant_label}`}
-                          className="w-full h-32 object-cover rounded border border-gray-200"
-                        />
-                      </div>
-                    )} */}
-
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
+                    {/* Status indicator - Fixed position */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-2">
                         {variant.isPlaceholder ? (
                           <>
-                            <Clock className="w-3 h-3" />
-                            {variant.isCompleted ? 'Processing...' : variant.isFailed ? 'Failed' : `Generating... ${variant.progress}%`}
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-500">
+                              {variant.isCompleted ? 'Processing...' : variant.isFailed ? 'Failed' : 'Generating...'}
+                            </span>
                           </>
                         ) : (
                           <>
-                            <CheckCircle className="w-3 h-3 text-green-600" />
-                            Click to preview
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm text-gray-600 font-medium">
+                              {jobIds.length > 0 && improvedVariantByJobId[jobIds[index]] ? 'Improved' : 'Ready to preview'}
+                            </span>
                           </>
                         )}
-                      </span>
+                      </div>
                       {!variant.isPlaceholder && (
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                       )}
                     </div>
 
-                    {!variant.isPlaceholder && (
-                      <div className="mt-3 space-y-2">
-                        <label className="block text-xs text-gray-600">Something not right? Describe the issue:</label>
-                        <textarea
-                          className="w-full text-sm border rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          rows={2}
-                          placeholder="e.g., The button is not centered"
-                          value={feedbackByJobId[jobIds[index]] || ''}
-                          onChange={(e) =>
-                            setFeedbackByJobId(prev => ({ ...prev, [jobIds[index]]: e.target.value }))
-                          }
-                        />
-                        <div className="flex items-center gap-2">
-                          <button
-                            className={`px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50`}
-                            disabled={!projectId || !feedbackByJobId[jobIds[index]] || isImprovingByJobId[jobIds[index]]}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const jid = jobIds[index];
-                              try {
-                                setIsImprovingByJobId(prev => ({ ...prev, [jid]: true }));
-                                const feedback = (feedbackByJobId[jid] || '').trim();
-                                if (!projectId || !feedback) return;
-                                // Each job currently returns a single variant; index 0
-                                const resp = await chatApi.improveVariant(jid, 0, projectId, feedback);
-                                if (resp?.variant) {
-                                  setImprovedVariantByJobId(prev => ({ ...prev, [jid]: resp.variant }));
-                                }
-                                if (Array.isArray(resp?.improvements)) {
-                                  setImprovementsByJobId(prev => ({ ...prev, [jid]: resp.improvements }));
-                                }
-                                if (typeof resp?.confidence === 'number') {
-                                  const conf = resp.confidence as number;
-                                  setConfidenceByJobId(prev => ({ ...prev, [jid]: conf }));
-                                }
-                              } catch (err) {
-                                console.error('Failed to improve variant', err);
-                              } finally {
-                                setIsImprovingByJobId(prev => ({ ...prev, [jid]: false }));
-                              }
-                            }}
-                          >
-                            {isImprovingByJobId[jobIds[index]] ? 'Improving…' : 'Submit feedback'}
-                          </button>
-
-                          {typeof confidenceByJobId[jobIds[index]] === 'number' && (
-                            <span className="text-xs text-gray-500">Confidence: {(confidenceByJobId[jobIds[index]] * 100).toFixed(0)}%</span>
-                          )}
-                        </div>
-
-                        {Array.isArray(improvementsByJobId[jobIds[index]]) && improvementsByJobId[jobIds[index]].length > 0 && (
-                          <div className="text-xs text-gray-600">
-                            <span className="font-medium">Improvements:</span>
-                            <ul className="list-disc ml-4 mt-1 space-y-0.5">
-                              {improvementsByJobId[jobIds[index]].map((imp, i) => (
-                                <li key={i}>{imp}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                    {/* Action buttons - only for completed variants */}
+                    {!variant.isPlaceholder && jobIds.length > 0 && (
+                      <div className="mt-auto pt-4 border-t border-gray-100">
+                        <button
+                          onClick={(e) => openFeedbackModal(jobIds[index], e)}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:text-gray-800 group"
+                        >
+                          <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Improve variant
+                        </button>
                       </div>
                     )}
                   </div>
                 </Card>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
 
-        {/* Simple Modal */}
+        {/* Variant Preview Modal */}
         {isModalOpen && selectedVariant && (
           <div 
             className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -501,6 +506,99 @@ export const VariantsDisplay = (props: any) => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Simple Feedback Modal */}
+        {isFeedbackModalOpen && selectedJobId && createPortal(
+          <div 
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={closeFeedbackModal}
+          >
+            <div 
+              className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Improve Variant</h3>
+                <button
+                  onClick={closeFeedbackModal}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="size-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    What changes would you like us to make?
+                  </label>
+                  <textarea
+                    className="w-full text-sm border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200 placeholder:text-gray-400"
+                    rows={4}
+                    placeholder="e.g., Make the button larger and change the color to blue"
+                    value={feedbackByJobId[selectedJobId] || ''}
+                    onChange={(e) =>
+                      setFeedbackByJobId(prev => ({ ...prev, [selectedJobId]: e.target.value }))
+                    }
+                  />
+                </div>
+                
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={closeFeedbackModal}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  
+                  <button
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      !projectId || !feedbackByJobId[selectedJobId] || isImprovingByJobId[selectedJobId]
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                    disabled={!projectId || !feedbackByJobId[selectedJobId] || isImprovingByJobId[selectedJobId]}
+                    onClick={async () => {
+                      try {
+                        setIsImprovingByJobId(prev => ({ ...prev, [selectedJobId]: true }));
+                        const feedback = (feedbackByJobId[selectedJobId] || '').trim();
+                        if (!projectId || !feedback) return;
+                        
+                        const resp = await chatApi.improveVariant(selectedJobId, 0, projectId, feedback);
+                        if (resp?.variant) {
+                          setImprovedVariantByJobId(prev => ({ ...prev, [selectedJobId]: resp.variant }));
+                        }
+                        if (Array.isArray(resp?.improvements)) {
+                          setImprovementsByJobId(prev => ({ ...prev, [selectedJobId]: resp.improvements }));
+                        }
+                        if (typeof resp?.confidence === 'number') {
+                          const conf = resp.confidence as number;
+                          setConfidenceByJobId(prev => ({ ...prev, [selectedJobId]: conf }));
+                        }
+                        
+                        closeFeedbackModal();
+                      } catch (err) {
+                        console.error('Failed to improve variant', err);
+                      } finally {
+                        setIsImprovingByJobId(prev => ({ ...prev, [selectedJobId]: false }));
+                      }
+                    }}
+                  >
+                    {isImprovingByJobId[selectedJobId] ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Improving...
+                      </div>
+                    ) : (
+                      'Make changes'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
       </>
     );

@@ -510,7 +510,13 @@ const AssistantMessage: FC = () => {
         className="relative mx-auto grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] px-[var(--thread-padding-x)] py-4"
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         data-role="assistant"
+        // Optimize for streaming performance
+        style={{ 
+          contain: "layout style paint",
+          willChange: "contents"
+        }}
       >
         {/* aui-assistant-message-avatar */}
         <div className="ring-border bg-background col-start-1 row-start-1 flex size-8 shrink-0 items-center justify-center rounded-full ring-1 overflow-hidden relative">

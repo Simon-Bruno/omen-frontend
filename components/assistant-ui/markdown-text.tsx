@@ -84,8 +84,17 @@ const defaultComponents = memoizeMarkdownComponents({
     <h6 className={cn("my-4 font-semibold first:mt-0 last:mb-0", className)} {...props} />
   ),
   p: ({ className, ...props }) => {
-
-    return <p className={cn("mb-5 mt-5 leading-7 first:mt-0 last:mb-0", className)} {...props} />;
+    return (
+      <p 
+        className={cn(
+          "mb-5 mt-5 leading-7 first:mt-0 last:mb-0",
+          // Streaming optimizations
+          "min-h-[1.2em] transition-opacity duration-100 ease-out",
+          className
+        )} 
+        {...props} 
+      />
+    );
   },
   a: ({ className, href, ...props }) => {
     return (
