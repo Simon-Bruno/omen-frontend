@@ -1,11 +1,19 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { CircleDot, CheckCircle2, FlaskConical, Rocket, Sparkles, Layers } from "lucide-react";
+import {
+  CircleDot,
+  CheckCircle2,
+  FlaskConical,
+  Rocket,
+  Sparkles,
+  Layers,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDescription } from "@/components/ui/alert";
 import { StuckSuggestions } from "@/components/assistant-ui/stuck-suggestions";
 import { useAuth } from "@/contexts/auth-context";
+import { ComposedChart, Line, Area, ResponsiveContainer, YAxis } from "recharts";
 
 type TimelineItem = {
   id: string;
@@ -54,6 +62,25 @@ const copilotTagClasses: Record<CopilotStatus, string> = {
   idle: "bg-gray-50 text-gray-600 border-gray-200",
 };
 
+const generateVisitorData = () => {
+  const data = [];
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const baseVisitors = 2500;
+    const variance = Math.sin(i / 4) * 40 + Math.random() * 30;
+    data.push({
+      date: date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      visitors: Math.round(baseVisitors + variance),
+    });
+  }
+  return data;
+};
+
 export function CopilotConsole({
   className = "",
   now = "We're currently working on creating test variants tailored to your brand and traffic.",
@@ -69,8 +96,12 @@ export function CopilotConsole({
   copilotStatus = "thinking",
 }: CopilotConsoleProps) {
   const { user } = useAuth();
+  const visitorData = useMemo(() => generateVisitorData(), []);
+
   // Track availability of checkpoints by detecting presence of corresponding sections in the thread viewport
-  const [availableStages, setAvailableStages] = useState<Record<string, boolean>>({
+  const [availableStages, setAvailableStages] = useState<
+    Record<string, boolean>
+  >({
     brand: false,
     hypotheses: false,
     variants: false,
@@ -78,27 +109,50 @@ export function CopilotConsole({
     launched: false,
   });
 
-
   // Compute timeline dynamically based on available stages
   const computedTimeline = useMemo(() => {
     const timelineItems: TimelineItem[] = [
       { id: "store", label: "Store connected", status: "done" }, // Always done if user is authenticated
-      { id: "brand", label: "Brand analysis", status: availableStages.brand ? "done" : "pending" },
-      { id: "hypotheses", label: "Hypothesis generation", status: availableStages.hypotheses ? "done" : "pending" },
-      { id: "variants", label: "Variant creation", status: availableStages.variants ? "done" : "pending" },
-      { id: "config", label: "Experiment configured", status: availableStages.launch ? "done" : "pending" },
-      { id: "launched", label: "Experiment launched", status: availableStages.launched ? "done" : "pending" },
+      {
+        id: "brand",
+        label: "Brand analysis",
+        status: availableStages.brand ? "done" : "pending",
+      },
+      {
+        id: "hypotheses",
+        label: "Hypothesis generation",
+        status: availableStages.hypotheses ? "done" : "pending",
+      },
+      {
+        id: "variants",
+        label: "Variant creation",
+        status: availableStages.variants ? "done" : "pending",
+      },
+      {
+        id: "config",
+        label: "Experiment configured",
+        status: availableStages.launch ? "done" : "pending",
+      },
+      {
+        id: "launched",
+        label: "Experiment launched",
+        status: availableStages.launched ? "done" : "pending",
+      },
     ];
 
     // Find the first pending stage and mark it as active
-    const firstPendingIndex = timelineItems.findIndex(item => item.status === "pending");
+    const firstPendingIndex = timelineItems.findIndex(
+      (item) => item.status === "pending"
+    );
     if (firstPendingIndex !== -1) {
-      timelineItems[firstPendingIndex] = { ...timelineItems[firstPendingIndex], status: "active" };
+      timelineItems[firstPendingIndex] = {
+        ...timelineItems[firstPendingIndex],
+        status: "active",
+      };
     }
 
     return timelineItems;
   }, [availableStages]);
-
 
   // Simple list of checkpoints (2x2 grid)
   const checkpoints = useMemo(
@@ -114,14 +168,22 @@ export function CopilotConsole({
   useEffect(() => {
     // Determine availability by checking for elements with matching data-stage attributes
     const computeAvailability = () => {
-      const hasBrandCard = !!document.querySelector('[data-stage="brand-analysis"]');
-      const hasHypothesesCard = !!document.querySelector('[data-stage="hypotheses"]');
-      const hasVariantsCard = !!document.querySelector('[data-stage="variants"]');
-      const hasLaunchCard = !!document.querySelector('[data-stage="experiment-preview"]') || 
-                            !!document.querySelector('[data-function-call="preview_experiment"]');
-      const hasLaunchedCard = !!document.querySelector('[data-stage="experiment-launched"]') || 
-                              !!document.querySelector('[data-function-call="launch_experiment"]') ||
-                              !!document.querySelector('[data-function-call="create_experiment"]');
+      const hasBrandCard = !!document.querySelector(
+        '[data-stage="brand-analysis"]'
+      );
+      const hasHypothesesCard = !!document.querySelector(
+        '[data-stage="hypotheses"]'
+      );
+      const hasVariantsCard = !!document.querySelector(
+        '[data-stage="variants"]'
+      );
+      const hasLaunchCard =
+        !!document.querySelector('[data-stage="experiment-preview"]') ||
+        !!document.querySelector('[data-function-call="preview_experiment"]');
+      const hasLaunchedCard =
+        !!document.querySelector('[data-stage="experiment-launched"]') ||
+        !!document.querySelector('[data-function-call="launch_experiment"]') ||
+        !!document.querySelector('[data-function-call="create_experiment"]');
 
       setAvailableStages({
         brand: hasBrandCard,
@@ -153,15 +215,15 @@ export function CopilotConsole({
     const intervalId = observer
       ? null
       : window.setInterval(() => {
-        if (!observer) {
-          observer = attachViewportObserver();
-          computeAvailability();
-          retries += 1;
-          if (observer || retries >= maxRetries) {
-            if (intervalId) window.clearInterval(intervalId);
+          if (!observer) {
+            observer = attachViewportObserver();
+            computeAvailability();
+            retries += 1;
+            if (observer || retries >= maxRetries) {
+              if (intervalId) window.clearInterval(intervalId);
+            }
           }
-        }
-      }, retryInterval);
+        }, retryInterval);
 
     // Also recompute on visibility change (e.g., when switching tabs)
     const onVisibilityChange = () => computeAvailability();
@@ -173,7 +235,6 @@ export function CopilotConsole({
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
-
 
   const scrollToStage = (id: string) => {
     let selector = "";
@@ -188,10 +249,12 @@ export function CopilotConsole({
         selector = '[data-stage="variants"]';
         break;
       case "launch":
-        selector = '[data-stage="experiment-preview"], [data-function-call="preview_experiment"]';
+        selector =
+          '[data-stage="experiment-preview"], [data-function-call="preview_experiment"]';
         break;
       case "launched":
-        selector = '[data-stage="experiment-launched"], [data-function-call="launch_experiment"]';
+        selector =
+          '[data-stage="experiment-launched"], [data-function-call="launch_experiment"]';
         break;
       default:
         return;
@@ -202,7 +265,9 @@ export function CopilotConsole({
     if (!el) return;
 
     // Find the chat container's scrollable viewport
-    const chatViewport = document.querySelector('[data-aui="thread-viewport"]') as HTMLElement | null;
+    const chatViewport = document.querySelector(
+      '[data-aui="thread-viewport"]'
+    ) as HTMLElement | null;
     if (!chatViewport) return;
 
     // Calculate the position of the target element relative to the viewport
@@ -210,43 +275,45 @@ export function CopilotConsole({
     const elementRect = el.getBoundingClientRect();
 
     // Calculate the scroll position needed to center the element in the viewport
-    const elementTop = elementRect.top - viewportRect.top + chatViewport.scrollTop;
+    const elementTop =
+      elementRect.top - viewportRect.top + chatViewport.scrollTop;
     const elementHeight = elementRect.height;
     const viewportHeight = chatViewport.clientHeight;
 
     // Center the element in the viewport
-    const scrollTop = elementTop - (viewportHeight / 2) + (elementHeight / 2);
+    const scrollTop = elementTop - viewportHeight / 2 + elementHeight / 2;
 
     // Smooth scroll within the chat container
     chatViewport.scrollTo({
       top: scrollTop,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   };
 
   return (
     <div className={`h-full p-6 flex flex-col ${className}`}>
       <div className="mb-1 gap-2 flex items-center">
-        <h2 className="text-2xl font-semibold text-slate-700">Copilot Console</h2>
+        <h2 className="text-2xl font-semibold text-slate-700">
+          Copilot Console
+        </h2>
         <Badge className={`rounded-full ${copilotTagClasses[copilotStatus]}`}>
           {copilotStatusLabel[copilotStatus]}
         </Badge>
       </div>
 
       <div className="flex flex-col justify-between gap-6 flex-1 overflow-auto pr-1">
-        {/* Top section */}
-        <section>
+        {/* Top section: Checkpoints + Timeline */}
+        <div className="flex flex-col gap-6">
           <AlertDescription className="text-sm text-slate-700">
             {now}
           </AlertDescription>
-        </section>
 
-        {/* Bottom wrapper: Checkpoints + Timeline + Stuck */}
-        <div className="flex flex-col gap-6">
           {/* Checkpoints */}
           <section>
-            <div className="mb-2 flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-slate-700">Checkpoints</h3>
+            <div className="mb-2 flex items-center gap-2 -mt-2">
+              <h3 className="text-sm font-semibold text-slate-700">
+                Checkpoints
+              </h3>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {checkpoints.map(({ id, label, icon: Icon }) => {
@@ -264,7 +331,12 @@ export function CopilotConsole({
                     }
                     aria-disabled={!isAvailable}
                   >
-                    <Icon className={"h-4 w-4 " + (isAvailable ? "text-slate-700" : "text-slate-300")} />
+                    <Icon
+                      className={
+                        "h-4 w-4 " +
+                        (isAvailable ? "text-slate-700" : "text-slate-300")
+                      }
+                    />
                     <span>{label}</span>
                   </button>
                 );
@@ -286,8 +358,8 @@ export function CopilotConsole({
                       t.status === "done"
                         ? "text-slate-700"
                         : t.status === "active"
-                          ? "text-slate-900"
-                          : "text-slate-400"
+                        ? "text-slate-900"
+                        : "text-slate-400"
                     }
                   >
                     {t.label}
@@ -296,8 +368,87 @@ export function CopilotConsole({
               ))}
             </ul>
           </section>
+        </div>
 
-          {/* Stuck? Suggestions */}
+        {/* Bottom section: Analytics + Stuck */}
+        <div className="flex flex-col gap-6">
+          {/* Analytics: Visitors Graph + Stats */}
+          <section className="space-y-4">
+            {/* Visitors Graph */}
+            <div>
+              <div className="mb-4">
+                <div className="text-3xl font-semibold text-slate-900">
+                  {visitorData
+                    .reduce((sum, d) => sum + d.visitors, 0)
+                    .toLocaleString()}
+                </div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                  Visitors (Past 30 Days)
+                </h3>
+                <div className="flex items-center gap-1 text-sm text-emerald-600 mt-1">
+                  <span>↑ 15%</span>
+                  <span className="text-slate-500">from last month</span>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={100}>
+                <ComposedChart data={visitorData}>
+                  <defs>
+                    <linearGradient id="visitorGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <YAxis hide domain={["dataMin - 10", "dataMax + 10"]} />
+                  <Area
+                    type="monotone"
+                    dataKey="visitors"
+                    stroke="none"
+                    fill="url(#visitorGradient)"
+                    animationDuration={1000}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="visitors"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={false}
+                    animationDuration={1000}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <div className="flex justify-between mt-2 text-xs text-slate-400">
+                <span>{visitorData[0]?.date}</span>
+                <span>{visitorData[visitorData.length - 1]?.date}</span>
+              </div>
+            </div>
+
+            {/* Conversion Rate & Revenue */}
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              {/* Conversion Rate */}
+              <div>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-semibold text-slate-900">3.2%</span>
+                  <span className="text-sm text-emerald-600 pb-1">↑ 12%</span>
+                </div>
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Conversion Rate
+                </h3>
+              </div>
+
+              {/* Revenue */}
+              <div>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-semibold text-slate-900">$24.5K</span>
+                  <span className="text-sm text-emerald-600 pb-1">↑ 18%</span>
+                </div>
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Revenue per session
+                </h3>
+              </div>
+            </div>
+          </section>
+
+          {/* Stuck */}
           <section className="border-t border-gray-200 pt-4">
             <StuckSuggestions />
           </section>

@@ -9,8 +9,9 @@ import { AnimatePresence, motion } from "framer-motion";
 
 export const BrandAnalysisDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [revealStage, setRevealStage] = useState(0);
+  const [hasInitiallyExpanded, setHasInitiallyExpanded] = useState(false);
   const hasAnimated = useRef(false);
   const isLoading = status.type === "running";
   const isCompleted = status.type === "complete";
@@ -32,6 +33,18 @@ export const BrandAnalysisDisplay = (props: any) => {
       console.error("Failed to parse brand analysis result:", e);
     }
   }
+
+  // Initial auto-expand animation - expand after 0.5s fade-in
+  useEffect(() => {
+    if (isCompleted && brandAnalysisData && !hasInitiallyExpanded) {
+      const expandTimer = setTimeout(() => {
+        setIsCollapsed(false);
+        setHasInitiallyExpanded(true);
+      }, 1000);
+
+      return () => clearTimeout(expandTimer);
+    }
+  }, [isCompleted, brandAnalysisData, hasInitiallyExpanded]);
 
   // Progressive reveal animation - only run once when component first appears
   useEffect(() => {
@@ -56,29 +69,40 @@ export const BrandAnalysisDisplay = (props: any) => {
   // Handle error state - no brand analysis found
   if (isCompleted && functionCallResponse && !functionCallResponse.success) {
     return (
-      <Card data-stage="brand-analysis" className="mb-4 mt-2 w-full">
-        <CardHeader className="gap-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex size-9 items-center justify-center rounded-md bg-red-100 text-red-600">
-                <AlertCircle className="size-5" />
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <Card data-stage="brand-analysis" className="mb-4 mt-2 w-full">
+          <CardHeader className="gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex size-9 items-center justify-center rounded-md bg-red-100 text-red-600">
+                  <AlertCircle className="size-5" />
+                </div>
+                <CardTitle className="text-3xl">Brand Analysis</CardTitle>
               </div>
-              <CardTitle className="text-3xl">Brand Analysis</CardTitle>
+              <Badge className="bg-red-600 hover:bg-red-600">No Data</Badge>
             </div>
-            <Badge className="bg-red-600 hover:bg-red-600">No Data</Badge>
-          </div>
-          <p className="max-w-3xl text-muted-foreground">
-            {functionCallResponse.message || "No brand analysis found for this project. Please run a brand analysis first."}
-          </p>
-        </CardHeader>
-      </Card>
+            <p className="max-w-3xl text-muted-foreground">
+              {functionCallResponse.message || "No brand analysis found for this project. Please run a brand analysis first."}
+            </p>
+          </CardHeader>
+        </Card>
+      </motion.div>
     );
   }
 
   return (
-    <Card data-stage="brand-analysis" className="mb-4 mt-2 w-full">
-      <CardHeader className="">
-        <div className="flex items-center justify-between">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <Card data-stage="brand-analysis" className="mb-4 mt-2 w-full">
+        <CardHeader className="">
+          <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center">
               {/* Refined gradient sparkles icon (no rounded background) */}
@@ -161,30 +185,19 @@ export const BrandAnalysisDisplay = (props: any) => {
           (brandAnalysisData.brand_personality_words || brandAnalysisData.brand_trait_scores?.brand_personality_words) && (
             <motion.div 
               className="flex flex-wrap items-center -mt-1 text-lg font-medium text-foreground/90"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0 }}
               animate={{ 
-                opacity: revealStage >= 2 ? 1 : 0, 
-                y: revealStage >= 2 ? 0 : 10 
+                opacity: revealStage >= 2 ? 1 : 0
               }}
-              transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              {(brandAnalysisData.brand_personality_words || brandAnalysisData.brand_trait_scores?.brand_personality_words || []).map((word, index) => (
-                <motion.span
+              {(brandAnalysisData.brand_personality_words || brandAnalysisData.brand_trait_scores?.brand_personality_words || []).map((word) => (
+                <span
                   key={word}
                   className="before:content-['•'] before:mx-2 first:before:hidden"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ 
-                    opacity: revealStage >= 2 ? 1 : 0, 
-                    scale: revealStage >= 2 ? 1 : 0.8 
-                  }}
-                  transition={{ 
-                    duration: 0.3, 
-                    ease: "easeOut", 
-                    delay: 0.2 + (index * 0.1) 
-                  }}
                 >
                   {word}
-                </motion.span>
+                </span>
               ))}
             </motion.div>
           )
@@ -198,7 +211,7 @@ export const BrandAnalysisDisplay = (props: any) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: "easeInOut" }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
             style={{ overflow: "hidden" }}
           >
             <CardContent className="space-y-4">
@@ -381,5 +394,6 @@ export const BrandAnalysisDisplay = (props: any) => {
         )}
       </AnimatePresence>
     </Card>
+    </motion.div>
   );
 };

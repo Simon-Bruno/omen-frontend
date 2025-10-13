@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Sparkles, CheckCircle, ChevronRight, Zap, Image, Eye, X, AlertCircle, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -291,7 +292,7 @@ export const VariantsDisplay = (props: any) => {
 
       return {
         variant_label: `Variant ${index + 1}`,
-        description: isCompleted ? 'Loading...' : isFailed ? 'Failed to generate' : 'Generating...',
+        description: isCompleted ? 'Loading...' : isFailed ? 'Failed to generate' : 'Creating...',
         rationale: isCompleted ? 'Processing complete' : isFailed ? 'Generation failed' : 'Creating your variant',
         screenshot: null,
         css_code: '',
@@ -312,7 +313,7 @@ export const VariantsDisplay = (props: any) => {
           // Placeholder variants when we don't have jobIds yet
           {
             variant_label: "Variant 1",
-            description: "Generating...",
+            description: "Creating...",
             rationale: "Creating your first variant",
             screenshot: null,
             css_code: '',
@@ -330,7 +331,7 @@ export const VariantsDisplay = (props: any) => {
           },
           {
             variant_label: "Variant 2", 
-            description: "Generating...",
+            description: "Creating...",
             rationale: "Creating your second variant",
             screenshot: null,
             css_code: '',
@@ -348,7 +349,7 @@ export const VariantsDisplay = (props: any) => {
           },
           {
             variant_label: "Variant 3",
-            description: "Generating...",
+            description: "Creating...",
             rationale: "Creating your third variant", 
             screenshot: null,
             css_code: '',
@@ -385,7 +386,7 @@ export const VariantsDisplay = (props: any) => {
                         : variant.isFailed
                           ? 'opacity-60'
                           : 'opacity-50')
-                    : 'hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1'
+                    : 'hover:shadow-sm hover:scale-[1.01] hover:-translate-y-1'
                 } ${(variant.isPlaceholder && !variant.isCompleted) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
@@ -421,53 +422,59 @@ export const VariantsDisplay = (props: any) => {
                   </div>
                 )}
 
-                <Card className="h-full border border-gray-200 shadow-sm bg-gradient-to-br from-white to-gray-50/50 hover:shadow-lg hover:border-gray-300 transition-all duration-300 flex flex-col">
+                <Card className="h-full border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 hover:shadow-md hover:border-gray-300 transition-all duration-300 flex flex-col">
                   <div className="p-4 flex-1 flex flex-col">
-                    {/* Header - Fixed height to ensure alignment */}
-                    <div className="h-16 mb-4 flex items-start">
+                    {/* Header - Top section */}
+                    <div className="flex flex-col gap-2">
+                      <Badge variant="secondary" className="text-xs font-medium text-gray-600 bg-gray-100/80 border-gray-200">
+                        Variant {index + 1}
+                      </Badge>
                       <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-3">
                         {variant.variant_label}
                       </h3>
                     </div>
 
-                    {/* Status indicator - Fixed position */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-2">
-                        {variant.isPlaceholder ? (
-                          <>
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-500">
-                              {variant.isCompleted ? 'Processing...' : variant.isFailed ? 'Failed' : 'Generating...'}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-gray-600 font-medium">
-                              {jobIds.length > 0 && improvedVariantByJobId[jobIds[index]] ? 'Improved' : 'Ready to preview'}
-                            </span>
-                          </>
+                    {/* Bottom section - Status and actions */}
+                    <div className="mt-auto flex flex-col gap-3 pt-4">
+                      {/* Status indicator */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {variant.isPlaceholder ? (
+                            <>
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-500">
+                                {variant.isCompleted ? 'Processing...' : variant.isFailed ? 'Failed' : 'Creating...'}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                              <span className="text-sm text-gray-600 font-medium">
+                                {jobIds.length > 0 && improvedVariantByJobId[jobIds[index]] ? 'Improved' : 'Ready to preview'}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {!variant.isPlaceholder && (
+                          <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                         )}
                       </div>
-                      {!variant.isPlaceholder && (
-                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+
+                      {/* Action buttons - only for completed variants */}
+                      {!variant.isPlaceholder && jobIds.length > 0 && (
+                        <div className="pt-3 border-t border-gray-100">
+                          <button
+                            onClick={(e) => openFeedbackModal(jobIds[index], e)}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg transition-all duration-200 group"
+                          >
+                            <svg className="w-4 h-4 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Modify variant
+                          </button>
+                        </div>
                       )}
                     </div>
-
-                    {/* Action buttons - only for completed variants */}
-                    {!variant.isPlaceholder && jobIds.length > 0 && (
-                      <div className="mt-auto pt-4 border-t border-gray-100">
-                        <button
-                          onClick={(e) => openFeedbackModal(jobIds[index], e)}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:text-gray-800 group"
-                        >
-                          <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          Improve variant
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </Card>
               </motion.div>
@@ -531,7 +538,7 @@ export const VariantsDisplay = (props: any) => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    What changes would you like us to make?
+                    What changes would you like to make?
                   </label>
                   <textarea
                     className="w-full text-sm border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200 placeholder:text-gray-400"
@@ -556,7 +563,7 @@ export const VariantsDisplay = (props: any) => {
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       !projectId || !feedbackByJobId[selectedJobId] || isImprovingByJobId[selectedJobId]
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
                     }`}
                     disabled={!projectId || !feedbackByJobId[selectedJobId] || isImprovingByJobId[selectedJobId]}
                     onClick={async () => {

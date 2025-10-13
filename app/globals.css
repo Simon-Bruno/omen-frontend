@@ -155,7 +155,12 @@
   }
 
   html {
-    /* Allow scrolling */
+    /* Allow scrolling by default */
+  }
+
+  /* Prevent background scrolling on chat page */
+  body.chat-page {
+    @apply overflow-hidden;
   }
   
   /* Scrollbar styling */
