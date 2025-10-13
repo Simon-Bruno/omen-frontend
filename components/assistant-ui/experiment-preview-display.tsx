@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   CheckCircle,
   Target,
-  BarChart3,
-  Clock,
+  Settings,
   ChevronDownIcon,
   ChevronUpIcon,
   Loader2,
@@ -14,10 +13,13 @@ import {
   Layers,
   ChevronRight,
   Check,
+  Clock,
+  ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+
+// (Pie chart helpers removed as we no longer render the chart)
 
 export const ExperimentPreviewDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
@@ -61,11 +63,11 @@ export const ExperimentPreviewDisplay = (props: any) => {
     if (isCompleted && experimentData && !hasAnimated.current) {
       hasAnimated.current = true;
       const stages = [
-        { delay: 0, stage: 1 },      // Header and description
-        { delay: 300, stage: 2 },    // Hypothesis details
-        { delay: 600, stage: 3 },    // Metrics
-        { delay: 900, stage: 4 },    // Variants and configuration
-        { delay: 1200, stage: 5 },   // Full reveal
+        { delay: 0, stage: 1 }, // Header and description
+        { delay: 300, stage: 2 }, // Hypothesis details
+        { delay: 600, stage: 3 }, // Metrics
+        { delay: 900, stage: 4 }, // Variants and configuration
+        { delay: 1200, stage: 5 }, // Full reveal
       ];
 
       stages.forEach(({ delay, stage }) => {
@@ -284,16 +286,20 @@ export const ExperimentPreviewDisplay = (props: any) => {
                 size="sm"
                 onClick={() => setIsCollapsed(!isCollapsed)}
               >
-                {isCollapsed ? <ChevronDownIcon className="size-4" /> : <ChevronUpIcon className="size-4" />}
+                {isCollapsed ? (
+                  <ChevronDownIcon className="size-4" />
+                ) : (
+                  <ChevronUpIcon className="size-4" />
+                )}
               </Button>
             </div>
-            
-            <motion.p 
+
+            <motion.p
               className="max-w-3xl text-muted-foreground"
               initial={{ opacity: 0, y: 10 }}
-              animate={{ 
-                opacity: revealStage >= 1 ? 1 : 0, 
-                y: revealStage >= 1 ? 0 : 10 
+              animate={{
+                opacity: revealStage >= 1 ? 1 : 0,
+                y: revealStage >= 1 ? 0 : 10,
               }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
@@ -315,12 +321,12 @@ export const ExperimentPreviewDisplay = (props: any) => {
                 <CardContent className="space-y-6">
                   {hypothesis && (
                     <>
-                      <motion.div 
+                      <motion.div
                         className="max-w-3xl"
                         initial={{ opacity: 0, y: 10 }}
-                        animate={{ 
-                          opacity: revealStage >= 2 ? 1 : 0, 
-                          y: revealStage >= 2 ? 0 : 10 
+                        animate={{
+                          opacity: revealStage >= 2 ? 1 : 0,
+                          y: revealStage >= 2 ? 0 : 10,
                         }}
                         transition={{ duration: 0.4, ease: "easeOut" }}
                       >
@@ -334,83 +340,105 @@ export const ExperimentPreviewDisplay = (props: any) => {
                               {hypothesis.title}
                             </span>
                           </div>
-                          <p className="text-foreground/80">{hypothesis.description}</p>
+                          <p className="text-foreground/80">
+                            {hypothesis.description}
+                          </p>
                         </div>
                       </motion.div>
 
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
-                        animate={{ 
-                          opacity: revealStage >= 3 ? 1 : 0, 
-                          y: revealStage >= 3 ? 0 : 20 
+                        animate={{
+                          opacity: revealStage >= 3 ? 1 : 0,
+                          y: revealStage >= 3 ? 0 : 20,
                         }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
                       >
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 items-center text-center">
-                        <motion.div 
-                          className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200 first:md:border-l-0"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ 
-                            opacity: revealStage >= 3 ? 1 : 0, 
-                            scale: revealStage >= 3 ? 1 : 0.9 
-                          }}
-                          transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-                        >
-                          <div className="text-2xl font-semibold leading-none tracking-tight text-slate-900">
-                            {hypothesis?.primary_outcome || "Primary outcome"}
-                          </div>
-                          <div className="mt-2 text-sm text-slate-500">
-                            Primary outcome
-                          </div>
-                        </motion.div>
-                        <motion.div 
-                          className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ 
-                            opacity: revealStage >= 3 ? 1 : 0, 
-                            scale: revealStage >= 3 ? 1 : 0.9 
-                          }}
-                          transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
-                        >
-                          <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-slate-900">
-                            {typeof baselinePerformance === "number"
-                              ? `${baselinePerformance.toFixed(1)}%`
-                              : "N/A"}
-                          </div>
-                          <div className="mt-2 text-sm text-slate-500">
-                            Current performance
-                          </div>
-                        </motion.div>
-                        <motion.div 
-                          className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ 
-                            opacity: revealStage >= 3 ? 1 : 0, 
-                            scale: revealStage >= 3 ? 1 : 0.9 
-                          }}
-                          transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
-                        >
-                          <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-green-600">
-                            {expectedUplift?.min != null &&
-                            expectedUplift?.max != null
-                              ? `+${Math.round(
-                                  expectedUplift.min * 100
-                                )}–${Math.round(expectedUplift.max * 100)}%`
-                              : "N/A"}
-                          </div>
-                          <div className="mt-2 text-sm text-slate-500">
-                            Expected increase
-                          </div>
-                        </motion.div>
-                      </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-3 items-stretch mx-auto py-1">
+                          <motion.div
+                            className="flex flex-col gap-1 text-left"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{
+                              opacity: revealStage >= 3 ? 1 : 0,
+                              scale: revealStage >= 3 ? 1 : 0.9,
+                            }}
+                            transition={{
+                              duration: 0.4,
+                              ease: "easeOut",
+                              delay: 0.1,
+                            }}
+                          >
+                            <div className="text-2xl font-semibold leading-none tracking-tight text-slate-900">
+                              {hypothesis?.primary_outcome || "Primary outcome"}
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-slate-700">
+                              Primary outcome
+                            </div>
+                          </motion.div>
+                          <motion.div
+                            className="flex flex-col gap-1 text-left"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{
+                              opacity: revealStage >= 3 ? 1 : 0,
+                              scale: revealStage >= 3 ? 1 : 0.9,
+                            }}
+                            transition={{
+                              duration: 0.4,
+                              ease: "easeOut",
+                              delay: 0.2,
+                            }}
+                          >
+                            <div className="flex items-end gap-2">
+                              <span className="text-3xl font-semibold leading-none tracking-tight text-slate-900">
+                                {typeof baselinePerformance === "number"
+                                  ? `${baselinePerformance.toFixed(1)}%`
+                                  : "N/A"}
+                              </span>
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-slate-700">
+                              Current performance
+                            </div>
+                          </motion.div>
+                          <motion.div
+                            className="flex flex-col gap-1 text-left"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{
+                              opacity: revealStage >= 3 ? 1 : 0,
+                              scale: revealStage >= 3 ? 1 : 0.9,
+                            }}
+                            transition={{
+                              duration: 0.4,
+                              ease: "easeOut",
+                              delay: 0.3,
+                            }}
+                          >
+                            <div className="flex items-end gap-2">
+                              <span className="text-3xl font-semibold leading-none tracking-tight text-emerald-600">
+                                {expectedUplift?.min != null &&
+                                expectedUplift?.max != null
+                                  ? `+${Math.round(
+                                      expectedUplift.min * 100
+                                    )}–${Math.round(expectedUplift.max * 100)}%`
+                                  : "N/A"}
+                              </span>
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-slate-700">
+                              Expected increase
+                            </div>
+                          </motion.div>
+                        </div>
 
                         <motion.div
                           initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ 
-                            opacity: revealStage >= 3 ? 1 : 0, 
-                            scale: revealStage >= 3 ? 1 : 0.95 
+                          animate={{
+                            opacity: revealStage >= 3 ? 1 : 0,
+                            scale: revealStage >= 3 ? 1 : 0.95,
                           }}
-                          transition={{ duration: 0.4, ease: "easeOut", delay: 0.4 }}
+                          transition={{
+                            duration: 0.4,
+                            ease: "easeOut",
+                            delay: 0.4,
+                          }}
                           className="mt-6"
                         >
                           <Separator />
@@ -423,201 +451,196 @@ export const ExperimentPreviewDisplay = (props: any) => {
                   {variants && variants.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
-                      animate={{ 
-                        opacity: revealStage >= 4 ? 1 : 0, 
-                        y: revealStage >= 4 ? 0 : 20 
+                      animate={{
+                        opacity: revealStage >= 4 ? 1 : 0,
+                        y: revealStage >= 4 ? 0 : 20,
                       }}
                       transition={{ duration: 0.5, ease: "easeOut" }}
                     >
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-1">
                         <Layers className="size-5 text-slate-900" />
                         <h4 className="text-lg font-semibold text-gray-900">
                           Variants ({variantCount || variants.length})
                         </h4>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full">
-                        {variants.map((variant: any, index: number) => {
-                          const handleVariantClick = () => {
-                            if (variant.jobId) {
-                              const isDevelopment = process.env.NODE_ENV === 'development' || 
-                                                   (typeof window !== 'undefined' && window.location.hostname === 'localhost');
-                              const shopifyUrl = isDevelopment 
-                                ? 'http://localhost:9292'
-                                : 'https://omen-mvp.myshopify.com';
-                              const previewUrl = `${shopifyUrl}/?preview=true&jobId=${variant.jobId}`;
-                              window.open(previewUrl, '_blank', 'noopener,noreferrer');
-                            }
-                          };
+                      <p className="text-xs text-slate-500 italic mb-3">
+                        10% of traffic goes to the control (current version of
+                        the website).
+                      </p>
+                      {(() => {
+                        const count = variants.length || 1;
+                        const base = Math.floor(90 / count);
+                        const rem = 90 - base * count;
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full">
+                            {variants.map((variant: any, index: number) => {
+                              const allocated =
+                                base + (index === count - 1 ? rem : 0);
+                              const handleVariantClick = () => {
+                                if (variant.jobId) {
+                                  const isDevelopment =
+                                    process.env.NODE_ENV === "development" ||
+                                    (typeof window !== "undefined" &&
+                                      window.location.hostname === "localhost");
+                                  const shopifyUrl = isDevelopment
+                                    ? "http://localhost:9292"
+                                    : "https://omen-mvp.myshopify.com";
+                                  const previewUrl = `${shopifyUrl}/?preview=true&jobId=${variant.jobId}`;
+                                  window.open(
+                                    previewUrl,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  );
+                                }
+                              };
 
-                          return (
-                            <motion.div
-                              key={index}
-                              className="group relative overflow-hidden transition-all duration-300 my-1 cursor-pointer"
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ 
-                                opacity: revealStage >= 4 ? 1 : 0, 
-                                scale: revealStage >= 4 ? 1 : 0.95 
-                              }}
-                              transition={{ 
-                                duration: 0.3, 
-                                ease: "easeOut", 
-                                delay: 0.1 + (index * 0.1) 
-                              }}
-                              onClick={handleVariantClick}
-                            >
-                              <Card className="h-full border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 hover:border-gray-300 transition-all duration-300 flex flex-col">
-                                <div className="p-4 flex-1 flex flex-col">
-                                  {/* Header - Top section */}
-                                  <div className="flex flex-col gap-2">
-                                    <Badge variant="secondary" className="text-xs font-medium text-emerald-700 bg-emerald-50 border-emerald-400 flex items-center gap-1 w-fit">
-                                      <Check className="w-3 h-3" />
-                                      Variant {index + 1}
-                                    </Badge>
-                                    <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-3">
-                                      {variant.label}
-                                    </h3>
-                                  </div>
-
-                                  {/* Bottom section - Status and actions */}
-                                  <div className="mt-auto flex flex-col gap-3 pt-4">
-                                    {/* Status indicator */}
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                        <span className="text-sm text-gray-600 font-medium">Ready to preview</span>
+                              return (
+                                <motion.div
+                                  key={index}
+                                  className="group relative overflow-hidden transition-all duration-300 my-1 cursor-pointer"
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{
+                                    opacity: revealStage >= 4 ? 1 : 0,
+                                    scale: revealStage >= 4 ? 1 : 0.95,
+                                  }}
+                                  transition={{
+                                    duration: 0.3,
+                                    ease: "easeOut",
+                                    delay: 0.1 + index * 0.1,
+                                  }}
+                                  onClick={handleVariantClick}
+                                >
+                                  <Card className="h-full border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 hover:border-gray-300 transition-all duration-300 flex flex-col">
+                                    <div className="p-4 flex-1 flex flex-col">
+                                      {/* Header - Top section */}
+                                      <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 w-fit">
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs font-medium text-emerald-700 bg-emerald-50 border-emerald-400 flex items-center gap-1 w-fit"
+                                          >
+                                            <Check className="w-3 h-3" />
+                                            Variant {index + 1}
+                                          </Badge>
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs font-medium text-orange-700 bg-orange-50 border-orange-300 w-fit"
+                                          >
+                                            {allocated}% traffic
+                                          </Badge>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-3">
+                                          {variant.label}
+                                        </h3>
                                       </div>
-                                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+
+                                      {/* Bottom section - Status and actions */}
+                                      <div className="mt-auto flex flex-col gap-3 pt-4">
+                                        {/* Status indicator */}
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                            <span className="text-sm text-gray-600 font-medium">
+                                              Preview
+                                            </span>
+                                          </div>
+                                          <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                </div>
-                              </Card>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
+                                  </Card>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </motion.div>
                   )}
 
                   {/* Experiment Configuration */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
-                    animate={{ 
-                      opacity: revealStage >= 4 ? 1 : 0, 
-                      y: revealStage >= 4 ? 0 : 20 
+                    animate={{
+                      opacity: revealStage >= 4 ? 1 : 0,
+                      y: revealStage >= 4 ? 0 : 20,
                     }}
                     transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
                   >
                     <div className="flex items-center gap-2 mb-3">
-                      <Clock className="size-5 text-slate-900" />
+                      <Settings className="size-5 text-slate-900" />
                       <h4 className="text-lg font-semibold text-gray-900">
-                        Experiment Configuration
+                        Experiment Configurations
                       </h4>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Traffic Split Visualization */}
+                    <div className="grid grid-cols-1">
                       <motion.div
-                        className="flex flex-col gap-3"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ 
-                          opacity: revealStage >= 4 ? 1 : 0, 
-                          x: revealStage >= 4 ? 0 : -20 
-                        }}
-                        transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
-                      >
-                        <p className="text-sm font-semibold text-slate-800">Traffic Split</p>
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={(() => {
-                                  // 10% for control, remaining 90% split evenly among variants
-                                  const variantCount = variants?.length || 2; // Number of test variants
-                                  const variantSplit = Math.floor(90 / variantCount);
-                                  const remainder = 90 - (variantSplit * variantCount);
-                                  
-                                  const data = [
-                                    { name: 'Control', value: 10, fill: '#64748b' }
-                                  ];
-                                  
-                                  const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'];
-                                  for (let i = 0; i < variantCount; i++) {
-                                    data.push({
-                                      name: `Variant ${i + 1}`,
-                                      value: variantSplit + (i === variantCount - 1 ? remainder : 0),
-                                      fill: colors[i] || '#3b82f6'
-                                    });
-                                  }
-                                  
-                                  return data;
-                                })()}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={90}
-                                paddingAngle={2}
-                                dataKey="value"
-                                label={(entry) => `${entry.value}%`}
-                                labelLine={true}
-                              >
-                                {(() => {
-                                  const variantCount = variants?.length || 2;
-                                  const colors = ['#64748b', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'];
-                                  return colors.slice(0, variantCount + 1).map((color, index) => (
-                                    <Cell key={`cell-${index}`} fill={color} />
-                                  ));
-                                })()}
-                              </Pie>
-                              <Legend 
-                                verticalAlign="bottom" 
-                                height={36}
-                                iconType="circle"
-                                formatter={(value) => <span className="text-sm text-slate-700">{value}</span>}
-                              />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </motion.div>
-
-                      {/* Other Configuration Items */}
-                      <motion.div
-                        className="flex flex-col gap-4"
+                        className="grid grid-cols-1 md:grid-cols-3 gap-3"
                         initial={{ opacity: 0, x: 20 }}
-                        animate={{ 
-                          opacity: revealStage >= 4 ? 1 : 0, 
-                          x: revealStage >= 4 ? 0 : 20 
+                        animate={{
+                          opacity: revealStage >= 4 ? 1 : 0,
+                          x: revealStage >= 4 ? 0 : 20,
                         }}
-                        transition={{ duration: 0.4, ease: "easeOut", delay: 0.4 }}
+                        transition={{
+                          duration: 0.4,
+                          ease: "easeOut",
+                          delay: 0.4,
+                        }}
                       >
-                        <div className="flex flex-col gap-1">
-                          <p className="text-xs font-medium text-slate-500">Running Time</p>
-                          <p className="text-sm text-slate-800">{runningTime || "N/A"}</p>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <p className="text-xs font-medium text-slate-500">Conflict Check</p>
-                          <p className="text-sm text-slate-800">{conflictCheck || "N/A"}</p>
-                        </div>
+                        <Card className="border border-gray-200 bg-white">
+                          <CardContent className="p-4">
+                            <div className="flex gap-3">
+                              <div className="self-stretch flex items-center">
+                                <Clock className="w-5 h-5 text-slate-500" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 mb-1">
+                                  Running Time
+                                </p>
+                                <p className="text-sm text-slate-900 font-semibold">
+                                  {/* {runningTime || "N/A"} */}
+                                  Until effect reached
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="border border-gray-200 bg-white">
+                          <CardContent className="p-4">
+                            <div className="flex gap-3">
+                              <div className="self-stretch flex items-center">
+                                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 mb-1">
+                                  Conflicts
+                                </p>
+                                <p className="text-sm text-emerald-700 font-semibold">
+                                  No conflicts
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="border border-gray-200 bg-white">
+                          <CardContent className="p-4">
+                            <div className="flex gap-3">
+                              <div className="self-stretch flex items-center">
+                                <Check className="w-5 h-5 text-emerald-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-slate-500 mb-1">
+                                  Status
+                                </p>
+                                <p className="text-sm text-emerald-700 font-semibold">
+                                  Ready to launch
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </motion.div>
                     </div>
-                  </motion.div>
-
-                  {/* Next Steps */}
-                  <motion.div
-                    className="bg-emerald-50 rounded-lg p-4 border border-emerald-200"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ 
-                      opacity: revealStage >= 5 ? 1 : 0, 
-                      scale: revealStage >= 5 ? 1 : 0.95 
-                    }}
-                    transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="size-5 text-emerald-600" />
-                      <h4 className="font-semibold text-emerald-800">Ready to Launch</h4>
-                    </div>
-                    <p className="text-emerald-700 text-sm">
-                      This experiment is configured and ready to be created. Once
-                      created, it will be saved and ready for publishing.
-                    </p>
                   </motion.div>
                 </CardContent>
               </motion.div>
@@ -670,9 +693,7 @@ export const ExperimentPreviewDisplay = (props: any) => {
                     <path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" />
                     <circle cx="12" cy="12" r="3.5" />
                   </g>
-                  <g
-                    fill="url(#experimentEyeGradientIdle)"
-                  >
+                  <g fill="url(#experimentEyeGradientIdle)">
                     <circle cx="12" cy="12" r="1.5" />
                   </g>
                 </svg>

@@ -21,7 +21,7 @@ const AssistantWithWelcome = ({ runtime }: { runtime: any }) => {
       try {
         const response = await fetch("/api/welcome");
         const welcomeMessage = await response.json();
-        
+
         // Add the welcome message to the thread
         runtime.thread.append(welcomeMessage);
         hasLoadedWelcomeMessage.current = true;
@@ -44,7 +44,7 @@ const AssistantWithWelcome = ({ runtime }: { runtime: any }) => {
     return (
       <div className="h-full w-full bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Preparing your assistant...</p>
         </div>
       </div>

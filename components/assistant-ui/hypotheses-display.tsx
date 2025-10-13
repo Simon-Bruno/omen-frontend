@@ -224,7 +224,7 @@ export const HypothesesDisplay = (props: any) => {
                 >
                   <CardContent className="space-y-6">
                     <motion.div 
-                      className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 items-center text-center"
+                      className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-3 items-stretch mx-auto py-1"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ 
                         opacity: revealStage >= 3 ? 1 : 0, 
@@ -233,7 +233,7 @@ export const HypothesesDisplay = (props: any) => {
                       transition={{ duration: 0.5, ease: "easeOut" }}
                     >
                       <motion.div 
-                        className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200 first:md:border-l-0"
+                        className="flex flex-col gap-1 text-left"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ 
                           opacity: revealStage >= 3 ? 1 : 0, 
@@ -244,10 +244,10 @@ export const HypothesesDisplay = (props: any) => {
                         <div className="text-2xl font-semibold leading-none tracking-tight text-slate-900">
                           {primaryHypothesis?.primary_outcome || "Primary outcome"}
                         </div>
-                        <div className="mt-2 text-sm text-slate-500">Primary outcome</div>
+                        <div className="mt-1 text-sm font-semibold text-slate-700">Primary outcome</div>
                       </motion.div>
                       <motion.div 
-                        className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200"
+                        className="flex flex-col gap-1 text-left"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ 
                           opacity: revealStage >= 3 ? 1 : 0, 
@@ -255,13 +255,15 @@ export const HypothesesDisplay = (props: any) => {
                         }}
                         transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
                       >
-                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-slate-900">
-                          {primaryHypothesis?.baseline_performance ? `${(primaryHypothesis.baseline_performance).toFixed(1)}%` : "N/A"}
+                        <div className="flex items-end gap-2">
+                          <span className="text-3xl font-semibold leading-none tracking-tight text-slate-900">
+                            {primaryHypothesis?.baseline_performance ? `${(primaryHypothesis.baseline_performance).toFixed(1)}%` : "N/A"}
+                          </span>
                         </div>
-                        <div className="mt-2 text-sm text-slate-500">Current performance</div>
+                        <div className="mt-1 text-sm font-semibold text-slate-700">Current performance</div>
                       </motion.div>
                       <motion.div 
-                        className="flex flex-col items-center md:px-6 md:border-l md:border-gray-200"
+                        className="flex flex-col gap-1 text-left"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ 
                           opacity: revealStage >= 3 ? 1 : 0, 
@@ -269,13 +271,15 @@ export const HypothesesDisplay = (props: any) => {
                         }}
                         transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
                       >
-                        <div className="text-3xl md:text-4xl font-semibold leading-none tracking-tight text-green-600">
-                          {primaryHypothesis?.predicted_lift_range ? 
-                            `+${Math.round(primaryHypothesis.predicted_lift_range.min * 100)}–${Math.round(primaryHypothesis.predicted_lift_range.max * 100)}%` : 
-                            "N/A"
-                          }
+                        <div className="flex items-end gap-2">
+                          <span className="text-3xl font-semibold leading-none tracking-tight text-emerald-600">
+                            {primaryHypothesis?.predicted_lift_range ? 
+                              `+${Math.round(primaryHypothesis.predicted_lift_range.min * 100)}–${Math.round(primaryHypothesis.predicted_lift_range.max * 100)}%` : 
+                              "N/A"
+                            }
+                          </span>
                         </div>
-                        <div className="mt-2 text-sm text-slate-500">Expected increase</div>
+                        <div className="mt-1 text-sm font-semibold text-slate-700">Expected increase</div>
                       </motion.div>
                     </motion.div>
 
