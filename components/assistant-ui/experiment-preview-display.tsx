@@ -484,7 +484,7 @@ export const ExperimentPreviewDisplay = (props: any) => {
                                       window.location.hostname === "localhost");
                                   const shopifyUrl = isDevelopment
                                     ? "http://localhost:9292"
-                                    : "https://omen-mvp.myshopify.com";
+                                    : "https://shop.omen.so";
                                   const previewUrl = `${shopifyUrl}/?preview=true&jobId=${variant.jobId}`;
                                   window.open(
                                     previewUrl,

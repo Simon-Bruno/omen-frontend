@@ -60,7 +60,6 @@ export async function DELETE(
     const response = await fetch(`${backendUrl}/api/experiments/${id}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '', // Forward cookies for authentication
       },
     });

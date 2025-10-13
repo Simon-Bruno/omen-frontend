@@ -100,12 +100,17 @@ async function apiRequest<T>(
   const url = `${baseUrl}${endpoint}`;
   
   const defaultOptions: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
     credentials: 'include', 
     ...options,
   };
+
+  // Only set Content-Type if there's a body
+  if (options.body) {
+    defaultOptions.headers = {
+      'Content-Type': 'application/json',
+      ...defaultOptions.headers,
+    };
+  }
 
   try {
     const response = await fetch(url, defaultOptions);
