@@ -9,12 +9,25 @@ import { AnimatePresence, motion } from "framer-motion";
 
 export const HypothesesDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [revealStage, setRevealStage] = useState(0);
+  const [hasInitiallyExpanded, setHasInitiallyExpanded] = useState(false);
   const hasAnimated = useRef(false);
   const isLoading = status.type === "running";
   const isCompleted = status.type === "complete";
   const hasError = status.type === "incomplete";
+
+  // Initial auto-expand animation - expand immediately
+  useEffect(() => {
+    if (isCompleted && result && !hasInitiallyExpanded) {
+      const expandTimer = setTimeout(() => {
+        setIsCollapsed(false);
+        setHasInitiallyExpanded(true);
+      }, 500);
+
+      return () => clearTimeout(expandTimer);
+    }
+  }, [isCompleted, result, hasInitiallyExpanded]);
 
   // Progressive reveal animation - only run once when component first appears
   useEffect(() => {
@@ -22,10 +35,10 @@ export const HypothesesDisplay = (props: any) => {
       hasAnimated.current = true;
       const stages = [
         { delay: 0, stage: 1 },      // Header and title
-        { delay: 300, stage: 2 },    // Description
-        { delay: 600, stage: 3 },    // Performance metrics
-        { delay: 900, stage: 4 },    // Problem and reasoning
-        { delay: 1200, stage: 5 },   // Full reveal
+        { delay: 100, stage: 2 },    // Description
+        { delay: 200, stage: 3 },    // Performance metrics
+        { delay: 300, stage: 4 },    // Problem and reasoning
+        { delay: 400, stage: 5 },    // Full reveal
       ];
 
       stages.forEach(({ delay, stage }) => {
@@ -108,7 +121,11 @@ export const HypothesesDisplay = (props: any) => {
       const primaryHypothesis = hypotheses[0];
 
       return (
-        <>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
           <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -171,23 +188,21 @@ export const HypothesesDisplay = (props: any) => {
                   <div className="space-y-2">
                     <motion.span 
                       className="text-foreground/90 font-semibold text-lg"
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0 }}
                       animate={{ 
-                        opacity: revealStage >= 1 ? 1 : 0, 
-                        x: revealStage >= 1 ? 0 : -20 
+                        opacity: revealStage >= 1 ? 1 : 0
                       }}
-                      transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
                     >
                       {primaryHypothesis.title}
                     </motion.span>
                     <motion.p 
                       className="text-foreground/80"
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0 }}
                       animate={{ 
-                        opacity: revealStage >= 2 ? 1 : 0, 
-                        y: revealStage >= 2 ? 0 : 10 
+                        opacity: revealStage >= 1 ? 1 : 0
                       }}
-                      transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
                     >
                       {primaryHypothesis.description}
                     </motion.p>
@@ -204,7 +219,7 @@ export const HypothesesDisplay = (props: any) => {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.28, ease: "easeInOut" }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
                   style={{ overflow: "hidden" }}
                 >
                   <CardContent className="space-y-6">
@@ -359,12 +374,17 @@ export const HypothesesDisplay = (props: any) => {
               )}
             </AnimatePresence>
           </Card>
-        </>
+        </motion.div>
       );
     } catch (e) {
       console.error("Failed to parse hypotheses JSON:", e);
       return (
-        <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <Card data-stage="hypotheses" data-function-call="generate_hypotheses" className="mb-4 mt-2 w-full">
           <CardHeader className="gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -383,6 +403,7 @@ export const HypothesesDisplay = (props: any) => {
             </pre>
           </CardContent>
         </Card>
+        </motion.div>
       );
     }
   }

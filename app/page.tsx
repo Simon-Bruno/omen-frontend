@@ -8,6 +8,8 @@ import { CopilotConsole } from "@/components/assistant-ui/copilot-console";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+const HEADER_HEIGHT = 64; // h-16 = 64px
+
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -19,6 +21,19 @@ export default function Home() {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router]);
+
+  // Add chat-page class to body to prevent background scrolling
+  useEffect(() => {
+    if (user?.project?.brandAnalysis != null) {
+      document.body.classList.add("chat-page");
+    } else {
+      document.body.classList.remove("chat-page");
+    }
+    
+    return () => {
+      document.body.classList.remove("chat-page");
+    };
+  }, [user?.project?.brandAnalysis]);
 
   if (isLoading) {
     return (
@@ -41,8 +56,8 @@ export default function Home() {
 
   // User is authenticated - show the assistant with user info
   return (
-    <div className="h-screen bg-gray-50 px-24 py-4 overflow-hidden">
-      <div className="h-[90%] flex gap-4">
+    <div className="bg-gray-50 px-24 py-4 overflow-hidden" style={{ height: `calc(100vh - ${HEADER_HEIGHT}px)` }}>
+      <div className="h-full flex gap-4">
         {/* Main Chat Container - Left Side */}
         <div className="flex-1 min-w-0">
           <div className="h-full bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
