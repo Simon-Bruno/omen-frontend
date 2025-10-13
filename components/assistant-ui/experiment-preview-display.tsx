@@ -390,9 +390,7 @@ export const ExperimentPreviewDisplay = (props: any) => {
                           >
                             <div className="flex items-end gap-2">
                               <span className="text-3xl font-semibold leading-none tracking-tight text-slate-900">
-                                {typeof baselinePerformance === "number"
-                                  ? `${baselinePerformance.toFixed(1)}%`
-                                  : "N/A"}
+                                3.2%
                               </span>
                             </div>
                             <div className="mt-1 text-sm font-semibold text-slate-700">
