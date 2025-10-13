@@ -8,12 +8,15 @@ import {
   Rocket,
   Sparkles,
   Layers,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AlertDescription } from "@/components/ui/alert";
 import { StuckSuggestions } from "@/components/assistant-ui/stuck-suggestions";
 import { useAuth } from "@/contexts/auth-context";
 import { ComposedChart, Line, Area, ResponsiveContainer, YAxis } from "recharts";
+import { AnimatePresence, motion } from "framer-motion";
 
 type TimelineItem = {
   id: string;
@@ -112,7 +115,7 @@ export function CopilotConsole({
   // Compute timeline dynamically based on available stages
   const computedTimeline = useMemo(() => {
     const timelineItems: TimelineItem[] = [
-      { id: "store", label: "Store connected", status: "done" }, // Always done if user is authenticated
+      { id: "store", label: "Store connection", status: "done" }, // Always done if user is authenticated
       {
         id: "brand",
         label: "Brand analysis",
@@ -130,12 +133,12 @@ export function CopilotConsole({
       },
       {
         id: "config",
-        label: "Experiment configured",
+        label: "Experiment configuration",
         status: availableStages.launch ? "done" : "pending",
       },
       {
         id: "launched",
-        label: "Experiment launched",
+        label: "Experiment launch",
         status: availableStages.launched ? "done" : "pending",
       },
     ];
@@ -153,6 +156,21 @@ export function CopilotConsole({
 
     return timelineItems;
   }, [availableStages]);
+
+  // Collapsible Timeline state
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+
+  const activeIndex = useMemo(() => {
+    return computedTimeline.findIndex((item) => item.status === "active");
+  }, [computedTimeline]);
+
+  const previewItems = useMemo(() => {
+    if (computedTimeline.length === 0) return [] as TimelineItem[];
+    const prev = activeIndex > 0 ? computedTimeline[activeIndex - 1] : undefined;
+    const curr = activeIndex >= 0 ? computedTimeline[activeIndex] : computedTimeline[0];
+    const next = activeIndex >= 0 && activeIndex < computedTimeline.length - 1 ? computedTimeline[activeIndex + 1] : undefined;
+    return [prev, curr, next].filter(Boolean) as TimelineItem[];
+  }, [computedTimeline, activeIndex]);
 
   // Simple list of checkpoints (2x2 grid)
   const checkpoints = useMemo(
@@ -296,21 +314,21 @@ export function CopilotConsole({
         <h2 className="text-2xl font-semibold text-slate-700">
           Copilot Console
         </h2>
-        <Badge className={`rounded-full ${copilotTagClasses[copilotStatus]}`}>
+        {/* <Badge className={`rounded-full ${copilotTagClasses[copilotStatus]}`}>
           {copilotStatusLabel[copilotStatus]}
-        </Badge>
+        </Badge> */}
       </div>
 
-      <div className="flex flex-col justify-between gap-6 flex-1 overflow-auto pr-1">
+      <motion.div layout className="flex flex-col justify-between gap-6 flex-1 overflow-auto pr-1" transition={{ duration: 0.25, ease: "easeOut" }}>
         {/* Top section: Checkpoints + Timeline */}
         <div className="flex flex-col gap-6">
-          <AlertDescription className="text-sm text-slate-700">
+          {/* <AlertDescription className="text-sm text-slate-700">
             {now}
-          </AlertDescription>
+          </AlertDescription> */}
 
           {/* Checkpoints */}
           <section>
-            <div className="mb-2 flex items-center gap-2 -mt-2">
+            <div className="mb-2 flex items-center gap-2">
               <h3 className="text-sm font-semibold text-slate-700">
                 Checkpoints
               </h3>
@@ -345,29 +363,102 @@ export function CopilotConsole({
           </section>
 
           {/* Timeline */}
-          <section>
-            <div className="mb-2 flex items-center gap-2">
+          <motion.section layout transition={{ duration: 0.25, ease: "easeOut" }}>
+            <div className="mb-2 flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-700">Timeline</h3>
+              <button
+                type="button"
+                onClick={() => setIsTimelineOpen((v) => !v)}
+                className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
+                aria-expanded={isTimelineOpen}
+                aria-controls="copilot-timeline"
+              >
+                <span className="hidden sm:inline">{isTimelineOpen ? "Collapse" : "Expand"}</span>
+                {isTimelineOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
             </div>
-            <ul className="space-y-2">
-              {computedTimeline.map((t) => (
-                <li key={t.id} className="flex items-center gap-2 text-sm">
-                  {statusIcon(t.status)}
-                  <span
-                    className={
-                      t.status === "done"
-                        ? "text-slate-700"
-                        : t.status === "active"
-                        ? "text-slate-900"
-                        : "text-slate-400"
-                    }
+
+            {/* Stable container for a11y control; switches between collapsed/expanded */}
+            <motion.div id="copilot-timeline" layout className="relative" initial={false}>
+              <AnimatePresence initial={false} mode="wait">
+                {!isTimelineOpen ? (
+                  <motion.ul
+                    key="collapsed"
+                    layout
+                    className="space-y-1"
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
                   >
-                    {t.label}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
+                    {(() => {
+                      const centerIndex = previewItems.findIndex((p) => p.status === "active");
+                      return previewItems.map((t, i) => {
+                        const distance = centerIndex === -1 ? 0 : Math.abs(i - centerIndex);
+                        const opacity = Math.max(1 - distance * 0.35, 0.2);
+                        return (
+                          <motion.li layout key={t.id} className="flex items-center gap-2 text-sm" style={{ opacity }}>
+                            {statusIcon(t.status)}
+                            <span
+                              className={
+                                t.status === "active"
+                                  ? "text-slate-900"
+                                  : t.status === "done"
+                                  ? "text-slate-700"
+                                  : "text-slate-400"
+                              }
+                            >
+                              {t.label}
+                            </span>
+                          </motion.li>
+                        );
+                      });
+                    })()}
+                  </motion.ul>
+                ) : (
+                  <motion.div
+                    key="expanded"
+                    layout
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <motion.ul layout className="space-y-2 pt-1">
+                      {computedTimeline.map((t, idx) => (
+                        <motion.li
+                          key={t.id}
+                          layout
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.02 * idx, duration: 0.18 }}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          {statusIcon(t.status)}
+                          <span
+                            className={
+                              t.status === "done"
+                                ? "text-slate-700"
+                                : t.status === "active"
+                                ? "text-slate-900"
+                                : "text-slate-400"
+                            }
+                          >
+                            {t.label}
+                          </span>
+                        </motion.li>
+                      ))}
+                    </motion.ul>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.section>
         </div>
 
         {/* Bottom section: Analytics + Stuck */}
@@ -431,14 +522,14 @@ export function CopilotConsole({
                   <span className="text-sm text-emerald-600 pb-1">↑ 12%</span>
                 </div>
                 <h3 className="text-sm font-semibold text-slate-700">
-                  Conversion Rate
+                  Purchase Rate
                 </h3>
               </div>
 
               {/* Revenue */}
               <div>
                 <div className="flex items-end gap-2">
-                  <span className="text-3xl font-semibold text-slate-900">$24.5K</span>
+                  <span className="text-3xl font-semibold text-slate-900">$1.32</span>
                   <span className="text-sm text-emerald-600 pb-1">↑ 18%</span>
                 </div>
                 <h3 className="text-sm font-semibold text-slate-700">
@@ -453,7 +544,7 @@ export function CopilotConsole({
             <StuckSuggestions />
           </section>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

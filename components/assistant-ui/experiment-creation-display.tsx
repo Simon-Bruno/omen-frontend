@@ -1,15 +1,23 @@
-import { Sparkles, CheckCircle, AlertCircle, Beaker, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+"use client";
+
+import { Sparkles, CheckCircle, AlertCircle, Beaker, ChevronDownIcon, ChevronUpIcon, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAnalytics } from "@/contexts/analytics-context";
+import { Confetti, type ConfettiRef } from "@/components/ui/confetti";
 
 export const ExperimentCreationDisplay = (props: any) => {
     const { toolName, argsText, result, status } = props;
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [revealStage, setRevealStage] = useState(0);
     const hasAnimated = useRef(false);
+    const confettiRef = useRef<ConfettiRef>(null);
+    const router = useRouter();
+    const { setSelectedExperimentId } = useAnalytics();
     const isLoading = status.type === "running";
     const isCompleted = status.type === "complete";
     const hasError = status.type === "incomplete";
@@ -32,6 +40,37 @@ export const ExperimentCreationDisplay = (props: any) => {
             hasAnimated.current = false;
         }
     }, [isCompleted, isLoading, result]);
+
+    // Fire confetti once when completed and canvas is ready
+    const hasFiredConfetti = useRef(false);
+    useEffect(() => {
+        if (!isCompleted || !result || hasFiredConfetti.current) return;
+        let cancelled = false;
+
+        const tryFire = (attempt = 0) => {
+            if (cancelled) return;
+            if (confettiRef.current) {
+                hasFiredConfetti.current = true;
+                confettiRef.current.fire({
+                    particleCount: 120,
+                    spread: 70,
+                    startVelocity: 45,
+                    scalar: 0.9,
+                    origin: { x: 0.5, y: 0.2 },
+                    zIndex: 60,
+                });
+                return;
+            }
+            if (attempt < 20) {
+                setTimeout(() => tryFire(attempt + 1), 50);
+            }
+        };
+
+        tryFire();
+        return () => {
+            cancelled = true;
+        };
+    }, [isCompleted, result]);
 
     // Handle the different statuses of the tool call
     if (status.type === "running") {
@@ -73,7 +112,12 @@ export const ExperimentCreationDisplay = (props: any) => {
                 : "Your Experiment";
 
             return (
-                <Card data-stage="experiment-creation" className="mb-4 mt-2 w-full">
+                <Card data-stage="experiment-creation" className="mb-4 mt-2 w-full relative overflow-hidden">
+                    <Confetti
+                        ref={confettiRef}
+                        manualstart
+                        className="absolute inset-0 z-40 pointer-events-none"
+                    />
                     <CardHeader className="">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -88,9 +132,9 @@ export const ExperimentCreationDisplay = (props: any) => {
                                     >
                                         <defs>
                                             <linearGradient id="experimentCheckGradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-                                                <stop offset="0%" stopColor="#10b981" />
-                                                <stop offset="55%" stopColor="#059669" />
-                                                <stop offset="100%" stopColor="#047857" />
+                                                <stop offset="0%" stopColor="#3b82f6" />
+                                                <stop offset="55%" stopColor="#a78bfa" />
+                                                <stop offset="100%" stopColor="#f59e0b" />
                                             </linearGradient>
                                             <filter id="experimentCheckGlow" x="-20%" y="-20%" width="140%" height="140%">
                                                 <feGaussianBlur stdDeviation="0.8" result="blur" />
@@ -121,7 +165,10 @@ export const ExperimentCreationDisplay = (props: any) => {
                                 <CardTitle className="text-3xl">Experiment Created</CardTitle>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Badge className="bg-green-600 hover:bg-green-600">Success</Badge>
+                                <div className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                    <span>Live</span>
+                                </div>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -143,7 +190,7 @@ export const ExperimentCreationDisplay = (props: any) => {
                             transition={{ duration: 0.4, ease: "easeOut" }}
                         >
                             <span className="text-foreground/90">
-                                Experiment "{experimentName}" has been created successfully and is ready for launch.
+                                Experiment "{experimentName}" has been created successfully and is live on your website!
                             </span>
                         </motion.p>
                     </CardHeader>
@@ -160,48 +207,7 @@ export const ExperimentCreationDisplay = (props: any) => {
                             >
                                 <CardContent className="space-y-4">
                                     <motion.div 
-                                        className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ 
-                                            opacity: revealStage >= 2 ? 1 : 0, 
-                                            y: revealStage >= 2 ? 0 : 20 
-                                        }}
-                                        transition={{ duration: 0.5, ease: "easeOut" }}
-                                    >
-                                        <motion.div 
-                                            className="flex flex-col gap-2"
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ 
-                                                opacity: revealStage >= 2 ? 1 : 0, 
-                                                x: revealStage >= 2 ? 0 : -20 
-                                            }}
-                                            transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-                                        >
-                                            <div className="text-lg font-semibold text-foreground/90">Experiment ID</div>
-                                            <div className="text-sm text-muted-foreground font-mono bg-muted/50 px-3 py-2 rounded-md">
-                                                {experimentId}
-                                            </div>
-                                        </motion.div>
-
-                                        <motion.div 
-                                            className="flex flex-col gap-2"
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ 
-                                                opacity: revealStage >= 2 ? 1 : 0, 
-                                                x: revealStage >= 2 ? 0 : 20 
-                                            }}
-                                            transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
-                                        >
-                                            <div className="text-lg font-semibold text-foreground/90">Status</div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                                <span className="text-sm text-muted-foreground">Ready for launch</span>
-                                            </div>
-                                        </motion.div>
-                                    </motion.div>
-
-                                    <motion.div 
-                                        className="bg-emerald-50 rounded-lg p-4 border border-emerald-200"
+                                        className="rounded-lg p-4 border border-gray-200 bg-white"
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ 
                                             opacity: revealStage >= 3 ? 1 : 0, 
@@ -209,12 +215,23 @@ export const ExperimentCreationDisplay = (props: any) => {
                                         }}
                                         transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
                                     >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <CheckCircle className="size-5 text-emerald-600" />
-                                            <h4 className="font-semibold text-emerald-800">Next Steps</h4>
+                                        <div className="flex items-center justify-between gap-3 mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <BarChart3 className="size-5 text-slate-600" />
+                                                <h4 className="font-semibold text-slate-800">Check analytics for this experiment</h4>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSelectedExperimentId(experimentId || null);
+                                                    router.push('/analytics');
+                                                }}
+                                            >
+                                                Open Analytics
+                                            </Button>
                                         </div>
-                                        <p className="text-emerald-700 text-sm">
-                                            Your experiment is now saved and ready to be published. You can view it in the experiments dashboard or launch it directly.
+                                        <p className="text-slate-600 text-sm">
+                                            View funnel, conversions, and traffic for "{experimentName}" in real time.
                                         </p>
                                     </motion.div>
                                 </CardContent>
