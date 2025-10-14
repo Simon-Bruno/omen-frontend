@@ -24,13 +24,13 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
     variantId: item.variantId,
   }));
 
-  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  const colors = ['#3B82F6', '#60A5FA', '#1D4ED8', '#93C5FD', '#A5B4FC']; // Softer blue palette
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <div className="bg-white p-3 border border-gray-100 rounded-xl shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
           <p className="text-sm text-gray-600">
             Conversion Rate: <span className="font-medium">{data.conversionRate.toFixed(2)}%</span>
@@ -75,36 +75,43 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>A/B Test Results</CardTitle>
+        <CardTitle className="text-gray-900">A/B Test Results</CardTitle>
       </CardHeader>
       <CardContent>
         {/* Chart */}
-        <div className="h-80 w-full mb-6">
+        <div className="h-48 w-full mb-6">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
+              layout="vertical"
               margin={{
-                top: 20,
-                right: 30,
-                left: 20,
-                bottom: 5,
+                top: 12,
+                right: 16,
+                left: 8,
+                bottom: 8,
               }}
+              barCategoryGap="8%"
+              barGap={2}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="4 8" stroke="#E5E7EB" horizontal={false} />
               <XAxis 
-                dataKey="variant" 
-                tick={{ fontSize: 12 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
+                type="number"
+                tick={{ fontSize: 12, fill: '#64748B' }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `${value}%`}
+                allowDecimals={false}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="conversionRate" radius={[4, 4, 0, 0]}>
+              <YAxis 
+                type="category"
+                dataKey="variant" 
+                tick={{ fontSize: 12, fill: '#64748B' }}
+                axisLine={false}
+                tickLine={false}
+                width={80}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={false} />
+              <Bar dataKey="conversionRate" radius={[0, 8, 8, 0]} maxBarSize={64} fillOpacity={0.95}>
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
@@ -117,7 +124,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
+              <tr className="border-b border-gray-100">
                 <th className="text-left py-3 px-2 font-medium text-gray-900">Variant</th>
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Sessions</th>
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Conversions</th>
@@ -184,32 +191,32 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
         </div>
 
         {/* Summary Stats */}
-        <div className="mt-6 pt-4 border-t">
+        <div className="mt-6 pt-4 border-t border-gray-100">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {data.reduce((sum, item) => sum + item.sessions, 0).toLocaleString()}
               </div>
-              <div className="text-gray-600">Total Sessions</div>
+              <div className="text-gray-500">Total Sessions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {data.reduce((sum, item) => sum + item.conversions, 0).toLocaleString()}
               </div>
-              <div className="text-gray-600">Total Conversions</div>
+              <div className="text-gray-500">Total Conversions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {(data.reduce((sum, item) => sum + item.conversions, 0) / 
                   data.reduce((sum, item) => sum + item.sessions, 0) * 100).toFixed(2)}%
               </div>
-              <div className="text-gray-600">Overall Rate</div>
+              <div className="text-gray-500">Overall Rate</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 ${data.reduce((sum, item) => sum + item.totalValue, 0).toLocaleString()}
               </div>
-              <div className="text-gray-600">Total Value</div>
+              <div className="text-gray-500">Total Value</div>
             </div>
           </div>
         </div>
