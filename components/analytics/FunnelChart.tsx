@@ -93,14 +93,14 @@ export function FunnelChart({ data, className }: FunnelChartProps) {
         })()
         : (() => {
             // For variant comparison, we need to group by step name and create columns for each variant
-            const stepNames = displayVariants[0]?.steps?.map(step => step.step) || [];
+            const stepNames = data.variants[0]?.steps?.map(step => step.step) || [];
             return stepNames.map((stepName, stepIndex) => {
                 const stepData: any = {
                     name: stepName || `Step ${stepIndex + 1}`,
                 };
                 
-                // Add each variant's data for this step
-                displayVariants.forEach(variant => {
+                // Add each variant's data for this step (all variants, not just selected)
+                data.variants.forEach(variant => {
                     const step = variant.steps?.[stepIndex];
                     if (step) {
                         stepData[variant.variantId] = step.count || 0;
@@ -111,13 +111,13 @@ export function FunnelChart({ data, className }: FunnelChartProps) {
             });
         })();
 
-    const colors = ['#3B82F6', '#1D4ED8', '#1E40AF', '#7C3AED', '#DC2626']; // Extended color palette
+    const colors = ['#3B82F6', '#60A5FA', '#1D4ED8', '#93C5FD', '#A5B4FC']; // Softer blue palette
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             return (
-                <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                <div className="bg-white p-3 border border-gray-100 rounded-xl shadow-lg">
                     <p className="font-medium text-gray-900">{label}</p>
                     {viewMode === 'overall' ? (
                         <>
@@ -156,51 +156,69 @@ export function FunnelChart({ data, className }: FunnelChartProps) {
         );
     };
 
+    const CustomLegend = ({ payload }: any) => {
+        return (
+            <div className="flex flex-wrap gap-3 justify-center mt-4">
+                {payload?.map((entry: any, index: number) => {
+                    const variantId = entry.dataKey;
+                    const variant = data.variants.find(v => v.variantId === variantId);
+                    const isSelected = selectedVariants.includes(variantId);
+                    
+                    return (
+                        <button
+                            key={`legend-${index}`}
+                            onClick={() => toggleVariant(variantId)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-300 ease-in-out ${
+                                isSelected 
+                                    ? 'bg-gray-800 hover:bg-gray-700 border-gray-900 scale-100' 
+                                    : 'bg-white hover:bg-gray-50 border-gray-200 scale-95'
+                            }`}
+                        >
+                            <div 
+                                className="w-3 h-3 rounded-full transition-all duration-300 ease-in-out"
+                                style={{ backgroundColor: entry.color }}
+                            />
+                            <span className={`text-sm font-medium transition-colors duration-300 ease-in-out ${
+                                isSelected ? 'text-white' : 'text-gray-900'
+                            }`}>
+                                {variantId}
+                            </span>
+                            {variant && (
+                                <span className={`text-xs transition-colors duration-300 ease-in-out ${
+                                    isSelected ? 'text-gray-300' : 'text-gray-600'
+                                }`}>
+                                    ({(variant.conversionRate || 0).toFixed(1)}%)
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    };
+
     return (
         <Card className={className}>
             <CardHeader>
                 <div className="flex items-center justify-between">
-                    <CardTitle>Conversion Funnel</CardTitle>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="secondary">
-                            {(data.overallStats?.overallConversionRate || 0).toFixed(1)}% Overall
-                        </Badge>
-                        <div className="flex gap-1">
-                            <Button
-                                size="sm"
-                                variant={viewMode === 'overall' ? 'default' : 'outline'}
-                                onClick={() => setViewMode('overall')}
-                            >
-                                Overall
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant={viewMode === 'variants' ? 'default' : 'outline'}
-                                onClick={() => setViewMode('variants')}
-                            >
-                                Compare Variants
-                            </Button>
-                        </div>
+                    <CardTitle className="text-gray-900">Conversion Funnel</CardTitle>
+                    <div className="flex gap-1">
+                        <Button
+                            size="sm"
+                            variant={viewMode === 'overall' ? 'default' : 'outline'}
+                            onClick={() => setViewMode('overall')}
+                        >
+                            Overall
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant={viewMode === 'variants' ? 'default' : 'outline'}
+                            onClick={() => setViewMode('variants')}
+                        >
+                            Compare Variants
+                        </Button>
                     </div>
                 </div>
-                
-                {viewMode === 'variants' && (
-                    <div className="mt-4">
-                        <p className="text-sm text-gray-600 mb-2">Select variants to compare:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {data.variants.map(variant => (
-                                <Button
-                                    key={variant.variantId}
-                                    size="sm"
-                                    variant={selectedVariants.includes(variant.variantId) ? 'default' : 'outline'}
-                                    onClick={() => toggleVariant(variant.variantId)}
-                                >
-                                    {variant.variantId} ({(variant.conversionRate || 0).toFixed(1)}%)
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </CardHeader>
             <CardContent>
                 <div className="h-80 w-full">
@@ -208,62 +226,70 @@ export function FunnelChart({ data, className }: FunnelChartProps) {
                         <BarChart
                             data={chartData}
                             margin={{
-                                top: 20,
-                                right: 30,
-                                left: 20,
-                                bottom: 5,
+                                top: 12,
+                                right: 16,
+                                left: 8,
+                                bottom: 8,
                             }}
+                            barCategoryGap="8%"
+                            barGap={2}
                         >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <CartesianGrid strokeDasharray="4 8" stroke="#E5E7EB" vertical={false} />
                             <XAxis
                                 dataKey="name"
-                                tick={{ fontSize: 12 }}
+                                tick={{ fontSize: 12, fill: '#64748B' }}
                                 axisLine={false}
                                 tickLine={false}
+                                interval={0}
                             />
                             <YAxis
-                                tick={{ fontSize: 12 }}
+                                tick={{ fontSize: 12, fill: '#64748B' }}
                                 axisLine={false}
                                 tickLine={false}
                                 tickFormatter={(value) => value.toLocaleString()}
+                                width={44}
+                                allowDecimals={false}
                             />
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={<CustomTooltip />} cursor={false} />
                             {viewMode === 'overall' ? (
-                                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                                <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={64} fillOpacity={0.95}>
                                     {chartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                                     ))}
                                 </Bar>
                             ) : (
-                                displayVariants.map((variant, variantIndex) => (
+                                data.variants.map((variant, variantIndex) => (
                                     <Bar 
                                         key={variant.variantId}
                                         dataKey={variant.variantId} 
                                         name={variant.variantId}
                                         fill={colors[variantIndex % colors.length]}
-                                        radius={[4, 4, 0, 0]}
+                                        radius={[8, 8, 0, 0]}
+                                        maxBarSize={64}
+                                        fillOpacity={selectedVariants.includes(variant.variantId) ? 0.9 : 0}
+                                        hide={!selectedVariants.includes(variant.variantId)}
                                     />
                                 ))
                             )}
-                            {viewMode === 'variants' && <Legend />}
+                            {viewMode === 'variants' && <Legend content={<CustomLegend />} />}
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
-                <div className="mt-6 pt-4 border-t">
+                <div className="mt-6 pt-4 border-t border-gray-100">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-gray-600">Total Sessions</span>
-                            <span className="font-medium">{(data.overallStats?.totalSessions || 0).toLocaleString()}</span>
+                            <span className="text-gray-500">Total Sessions</span>
+                            <span className="font-medium text-gray-900">{(data.overallStats?.totalSessions || 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-600">Overall Conversion Rate</span>
+                            <span className="text-gray-500">Overall Conversion Rate</span>
                             <span className="font-medium text-green-600">{(data.overallStats?.overallConversionRate || 0).toFixed(1)}%</span>
                         </div>
                     </div>
                     
                     {viewMode === 'variants' && displayVariants.length > 0 && (
-                        <div className="mt-4 pt-4 border-t">
+                        <div className="mt-4 pt-4 border-t border-gray-100">
                             <h4 className="text-sm font-medium text-gray-900 mb-2">Variant Performance</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {displayVariants.map(variant => (

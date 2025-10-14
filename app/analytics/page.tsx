@@ -7,7 +7,14 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { FunnelChart } from '@/components/analytics/FunnelChart';
 import { ConversionTable } from '@/components/analytics/ConversionTable';
 import { ExposureStats } from '@/components/analytics/ExposureStats';
@@ -16,7 +23,7 @@ import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
 import { PurchaseStats } from '@/components/analytics/PurchaseStats';
 import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, PurchaseStats as PurchaseStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
-import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, ShoppingCart, Trash2, Settings, ChevronDown, Database } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { isAuthenticated, isLoading, user, project } = useAuth();
@@ -407,11 +414,10 @@ export default function AnalyticsPage() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-semibold">Total Sessions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-semibold">
             {funnelData?.overallStats.totalSessions.toLocaleString() || '0'}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -422,11 +428,10 @@ export default function AnalyticsPage() {
       
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-          <Target className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-semibold">Conversion Rate</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-semibold">
             {funnelData?.overallStats.overallConversionRate.toFixed(1) || '0.0'}%
           </div>
           <p className="text-xs text-muted-foreground">
@@ -437,11 +442,10 @@ export default function AnalyticsPage() {
       
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Variants</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-semibold">Active Variants</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-semibold">
             {funnelData?.variants.length || 0}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -452,11 +456,10 @@ export default function AnalyticsPage() {
       
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Best Performer</CardTitle>
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-semibold">Best Performer</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-semibold">
               {funnelData?.variants && funnelData.variants.length > 0 
               ? funnelData.variants.reduce((best, current) => 
                   current.conversionRate > best.conversionRate ? current : best
@@ -474,6 +477,27 @@ export default function AnalyticsPage() {
       </Card>
     </div>
   );
+
+  // Sliding underline indicator state for tabs
+  const tabsContainerRef = React.useRef<HTMLDivElement | null>(null);
+  const tabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicator, setIndicator] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+
+  const updateIndicator = () => {
+    const container = tabsContainerRef.current;
+    const activeEl = tabRefs.current[activeTab];
+    if (!container || !activeEl) return;
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeEl.getBoundingClientRect();
+    setIndicator({ left: activeRect.left - containerRect.left, width: activeRect.width });
+  };
+
+  useEffect(() => {
+    updateIndicator();
+    const onResize = () => updateIndicator();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [activeTab]);
 
   const renderContent = () => {
     // Show selection prompt if no experiment is selected
@@ -544,81 +568,44 @@ export default function AnalyticsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
-              {/* Create Experiment Button */}
-              <Button
-                onClick={() => router.push('/experiments/create')}
-                size="sm"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Experiment
-              </Button>
-
-              {/* Data Source Toggle */}
-              <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Data Source:</span>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm ${useMockData ? 'text-gray-500' : 'text-gray-900'}`}>
-                    Real API
-                  </span>
-                  <Switch
-                    checked={useMockData}
-                    onCheckedChange={setUseMockData}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="w-4 h-4" />
+                    Project Settings
+                    <ChevronDown className="w-4 h-4 ml-1 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => router.push('/experiments/create')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Experiment
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => loadData()} disabled={loading || !selectedExperimentId}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    {loading ? 'Loading...' : 'Refresh'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setUseMockData(!useMockData)}
                     disabled={loading}
-                  />
-                  <span className={`text-sm ${useMockData ? 'text-gray-900' : 'text-gray-500'}`}>
-                    Mock Data
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadData}
-                disabled={loading || !selectedExperimentId}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Loading...' : 'Refresh'}
-              </Button>
-
-              {/* Reset Analytics Button */}
-              {selectedExperimentId && (
-                <>
-                  {showResetConfirm ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-red-600">Reset all data?</span>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleResetAnalytics}
-                        disabled={isResetting}
-                      >
-                        {isResetting ? 'Resetting...' : 'Confirm'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowResetConfirm(false)}
-                        disabled={isResetting}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowResetConfirm(true)}
-                      disabled={loading || isResetting}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Reset Data
-                    </Button>
-                  )}
-                </>
-              )}
-              <Badge variant={useMockData ? "secondary" : "default"}>
+                  >
+                    <Database className="w-4 h-4 mr-2" />
+                    {useMockData ? 'Use Live Data' : 'Use Mock Data'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => setShowResetConfirm(true)}
+                    disabled={loading || isResetting || !selectedExperimentId}
+                    className="text-red-600 focus:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Reset Data
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Badge variant={useMockData ? 'secondary' : 'default'}>
                 {useMockData ? 'Mock Data' : 'Live Data'}
               </Badge>
             </div>
@@ -626,27 +613,53 @@ export default function AnalyticsPage() {
 
         </div>
 
+        {showResetConfirm && (
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-sm text-red-600">Reset all data?</span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleResetAnalytics}
+              disabled={isResetting}
+            >
+              {isResetting ? 'Resetting...' : 'Confirm'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowResetConfirm(false)}
+              disabled={isResetting}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-8">
           <nav className="-mb-px flex items-center justify-between">
-            <div className="flex space-x-8">
+            <div ref={tabsContainerRef} className="relative flex space-x-8">
               {tabs.map((tab) => {
-                const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
+                    ref={(el) => { tabRefs.current[tab.id] = el; }}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm ${
+                    className={`flex items-center py-2 px-1 font-medium text-sm ${
                       activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'text-black'
+                        : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
                     {tab.label}
                   </button>
                 );
               })}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -bottom-2 h-[2px] rounded bg-black transition-all duration-300 ease-out"
+                style={{ left: `${indicator.left}px`, width: `${indicator.width}px` }}
+              />
             </div>
             
             {/* Experiment Selector */}
