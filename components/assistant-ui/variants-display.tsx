@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, CheckCircle, ChevronRight, Zap, Image, Eye, X, AlertCircle, Clock } from "lucide-react";
+import { Sparkles, CheckCircle, ChevronRight, Zap, Image, Eye, X, AlertCircle, Clock, Check, RefreshCcw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Variant, JobStatus } from "@/lib/chat-types";
@@ -29,6 +29,9 @@ export const VariantsDisplay = (props: any) => {
   const [improvementsByJobId, setImprovementsByJobId] = useState<Record<string, string[]>>({});
   const [confidenceByJobId, setConfidenceByJobId] = useState<Record<string, number>>({});
   const [isImprovingByJobId, setIsImprovingByJobId] = useState<Record<string, boolean>>({});
+  const [acceptedByJobId, setAcceptedByJobId] = useState<Record<string, boolean>>({});
+  const [declinedByJobId, setDeclinedByJobId] = useState<Record<string, boolean>>({});
+  const hasMountedRef = useRef(false);
 
   // Variant jobs context
   const { addVariantJob, updateVariantJobStatus, removeVariantJob } = useVariantJobs();
@@ -99,7 +102,7 @@ export const VariantsDisplay = (props: any) => {
       
       const shopifyUrl = isDevelopment 
         ? 'http://localhost:9292' // Your local Shopify development store
-        : 'https://omen-mvp.myshopify.com'; // Production store
+        : 'https://shop.omen.so'; // Production store
       
       const previewUrl = `${shopifyUrl}/?preview=true&jobId=${jobId}`;
       console.log('🔗 Opening preview URL:', previewUrl);
@@ -131,6 +134,8 @@ export const VariantsDisplay = (props: any) => {
 
   // Extract jobIds from function call result
   useEffect(() => {
+    // mark mounted to avoid re-applying entrance delays on state toggles
+    if (!hasMountedRef.current) hasMountedRef.current = true;
     if (status.type === "complete" && result && jobIds.length === 0) {
       try {
         const resultData = typeof result === "string" ? JSON.parse(result) : result;
@@ -379,24 +384,26 @@ export const VariantsDisplay = (props: any) => {
             {loadingVariants.map((variant, index) => (
               <motion.div
                 key={`variant-${index}`}
-                className={`group relative overflow-hidden transition-all duration-300 my-1 ${
-                  variant.isPlaceholder
-                    ? (variant.isCompleted
-                        ? 'opacity-100'
-                        : variant.isFailed
-                          ? 'opacity-60'
-                          : 'opacity-50')
-                    : 'hover:shadow-sm hover:scale-[1.01] hover:-translate-y-1'
-                } ${(variant.isPlaceholder && !variant.isCompleted) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: 1,
-                  y: 0
-                }}
+                className={`group relative overflow-hidden transition-transform duration-300 my-1 ${(() => {
+                  const jobId = jobIds.length > 0 ? jobIds[index] : undefined;
+                  const isDeclined = jobId && declinedByJobId[jobId] === true;
+                  if (variant.isPlaceholder) {
+                    return variant.isCompleted ? 'opacity-100' : (variant.isFailed ? 'opacity-60' : 'opacity-50');
+                  }
+                  return isDeclined ? 'opacity-60' : '';
+                })()} ${(variant.isPlaceholder && !variant.isCompleted) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                initial={{ opacity: 1, y: 20 }}
+                animate={{ y: 0 }}
+                whileHover={(() => {
+                  const jobId = jobIds.length > 0 ? jobIds[index] : undefined;
+                  const isDeclined = jobId && declinedByJobId[jobId] === true;
+                  if (variant.isPlaceholder || isDeclined) return undefined;
+                  return { scale: 1.01, y: -4 };
+                })()}
                 transition={{
-                  duration: 0.3,
+                  duration: 0.25,
                   ease: "easeOut",
-                  delay: index * 0.05
+                  delay: hasMountedRef.current ? 0 : index * 0.05
                 }}
                 onClick={() => {
                   if (!variant.isPlaceholder || variant.isCompleted) {
@@ -472,6 +479,95 @@ export const VariantsDisplay = (props: any) => {
                             </svg>
                             Modify variant
                           </button>
+                          {/* Accept / Decline / Regenerate row (full-width, same radius as Modify button) */}
+                          <div className="mt-2.5 w-full grid grid-cols-3 gap-2.5">
+                            {/* Accept */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const jobId = jobIds[index];
+                                setAcceptedByJobId(prev => ({ ...prev, [jobId]: true }));
+                                setDeclinedByJobId(prev => ({ ...prev, [jobId]: false }));
+                              }}
+                              className={`w-full h-10 inline-flex items-center justify-center rounded-lg border transition-colors ${(() => {
+                                const jobId = jobIds[index];
+                                return acceptedByJobId[jobId]
+                                  ? 'bg-green-50 border-green-200 text-green-700'
+                                  : 'bg-white border-gray-200/80 text-gray-700 hover:bg-gray-50 hover:border-gray-300';
+                              })()}`}
+                              aria-label="Accept variant"
+                              title="Accept"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+
+                            {/* Decline */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const jobId = jobIds[index];
+                                setDeclinedByJobId(prev => ({ ...prev, [jobId]: true }));
+                                setAcceptedByJobId(prev => ({ ...prev, [jobId]: false }));
+                              }}
+                              className={`w-full h-10 inline-flex items-center justify-center rounded-lg border transition-colors ${(() => {
+                                const jobId = jobIds[index];
+                                return declinedByJobId[jobId]
+                                  ? 'bg-red-50 border-red-200 text-red-700'
+                                  : 'bg-white border-gray-200/80 text-gray-700 hover:bg-gray-50 hover:border-gray-300';
+                              })()}`}
+                              aria-label="Decline variant"
+                              title="Decline"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+
+                            {/* Regenerate */}
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const jobId = jobIds[index];
+                                try {
+                                  setIsImprovingByJobId(prev => ({ ...prev, [jobId]: true }));
+                                  const resp = await chatApi.improveVariant(jobId, 0, projectId || 'default-project', 'Regenerate an alternative version');
+                                  if (resp?.variant) {
+                                    setImprovedVariantByJobId(prev => ({ ...prev, [jobId]: resp.variant }));
+                                  }
+                                  if (Array.isArray(resp?.improvements)) {
+                                    setImprovementsByJobId(prev => ({ ...prev, [jobId]: resp.improvements }));
+                                  }
+                                  if (typeof resp?.confidence === 'number') {
+                                    const conf = resp.confidence as number;
+                                    setConfidenceByJobId(prev => ({ ...prev, [jobId]: conf }));
+                                  }
+                                } catch (err) {
+                                  console.error('Failed to regenerate variant', err);
+                                } finally {
+                                  setIsImprovingByJobId(prev => ({ ...prev, [jobId]: false }));
+                                }
+                              }}
+                              className={`w-full h-10 inline-flex items-center justify-center rounded-lg border transition-colors ${(() => {
+                                const jobId = jobIds[index];
+                                return isImprovingByJobId[jobId]
+                                  ? 'bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed'
+                                  : 'bg-white border-gray-200/80 text-gray-700 hover:bg-gray-50 hover:border-gray-300';
+                              })()}`}
+                              disabled={(() => {
+                                const jobId = jobIds[index];
+                                return !!isImprovingByJobId[jobId];
+                              })()}
+                              aria-label="Regenerate variant"
+                              title="Regenerate"
+                            >
+                              {(() => {
+                                const jobId = jobIds[index];
+                                return isImprovingByJobId[jobId] ? (
+                                  <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+                                ) : (
+                                  <RefreshCcw className="w-4 h-4" />
+                                );
+                              })()}
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -319,7 +319,7 @@ export function CopilotConsole({
         </Badge> */}
       </div>
 
-      <motion.div layout className="flex flex-col justify-between gap-6 flex-1 overflow-auto pr-1" transition={{ duration: 0.25, ease: "easeOut" }}>
+      <motion.div layout className="flex flex-col justify-between gap-6 flex-1 overflow-hidden pr-1" transition={{ duration: 0.25, ease: "easeOut" }}>
         {/* Top section: Checkpoints + Timeline */}
         <div className="flex flex-col gap-6">
           {/* <AlertDescription className="text-sm text-slate-700">
