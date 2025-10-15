@@ -425,7 +425,7 @@ export default function AnalyticsPage() {
              <h3 className="text-sm font-semibold text-slate-700">Conversion Rate</h3>
            </div>
           <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {funnelData?.overallStats.overallConversionRate.toFixed(1) || '0.0'}%
+            {funnelData?.overallStats.overallConversionRate.toFixed(3) || '0.000'}%
           </div>
           <div className="flex items-center gap-1 text-sm text-slate-500">
             <span>{funnelData?.overallStats.totalConversions.toLocaleString() || '0'}</span>
@@ -460,8 +460,8 @@ export default function AnalyticsPage() {
             {funnelData?.variants && funnelData.variants.length > 0 
               ? funnelData.variants.reduce((best, current) => 
                   current.conversionRate > best.conversionRate ? current : best
-                ).conversionRate.toFixed(1) + '% conversion'
-              : '0.0% conversion'}
+                ).conversionRate.toFixed(3) + '% conversion'
+              : '0.000% conversion'}
           </div>
         </div>
       </div>
