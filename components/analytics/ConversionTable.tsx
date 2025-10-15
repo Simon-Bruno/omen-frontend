@@ -16,7 +16,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
   // Transform data for Recharts
   const chartData = data.map((item, index) => ({
     variant: `Variant ${index + 1}`,
-    conversionRate: item.conversionRate, // Already in percentage format
+    conversionRate: item.conversionRate / 100, // Convert from percentage to decimal
     sessions: item.sessions,
     conversions: item.conversions,
     variantId: item.variantId,
@@ -31,7 +31,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
         <div className="bg-white p-3 border border-gray-100 rounded-xl shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
           <p className="text-sm text-gray-600">
-            Conversion Rate: <span className="font-medium">{data.conversionRate.toFixed(2)}%</span>
+            Conversion Rate: <span className="font-medium">{(data.conversionRate * 100).toFixed(2)}%</span>
           </p>
           <p className="text-sm text-gray-600">
             Sessions: <span className="font-medium">{data.sessions.toLocaleString()}</span>
@@ -153,7 +153,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
                     </td>
                     <td className="text-right py-3 px-2">
                       <span className="font-medium text-gray-900">
-                        {item.conversionRate.toFixed(2)}%
+                        {(item.conversionRate / 100).toFixed(2)}%
                       </span>
                     </td>
                     <td className="text-center py-3 px-2">

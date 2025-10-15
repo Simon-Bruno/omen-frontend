@@ -486,7 +486,19 @@ export default function AnalyticsPage() {
       case 'overview':
         return (
           <div className="space-y-6">
-            {renderOverview()}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg border border-slate-200 p-6 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded mb-2"></div>
+                    <div className="h-8 bg-slate-200 rounded mb-1"></div>
+                    <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              renderOverview()
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {funnelData && <FunnelChart data={funnelData} />}
               {conversionData.length > 0 && <ConversionTable data={conversionData} />}
