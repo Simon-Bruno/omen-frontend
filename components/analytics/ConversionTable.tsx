@@ -16,11 +16,9 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
   // Transform data for Recharts
   const chartData = data.map((item, index) => ({
     variant: `Variant ${index + 1}`,
-    conversionRate: item.conversionRate,
+    conversionRate: item.conversionRate, // Already in percentage format
     sessions: item.sessions,
     conversions: item.conversions,
-    averageValue: item.averageValue,
-    totalValue: item.totalValue,
     variantId: item.variantId,
   }));
 
@@ -41,9 +39,6 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
           <p className="text-sm text-gray-600">
             Conversions: <span className="font-medium">{data.conversions.toLocaleString()}</span>
           </p>
-          <p className="text-sm text-gray-600">
-            Avg Value: <span className="font-medium">${data.averageValue.toFixed(2)}</span>
-          </p>
         </div>
       );
     }
@@ -56,9 +51,9 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
     
     try {
       const significance = analyticsUtils.calculateSignificance(
-        control.conversionRate / 100,
+        control.conversionRate / 100, // Convert percentage to decimal
         control.sessions,
-        variant.conversionRate / 100,
+        variant.conversionRate / 100, // Convert percentage to decimal
         variant.sessions
       );
       
@@ -129,8 +124,6 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Sessions</th>
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Conversions</th>
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Conversion Rate</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-900">Avg Value</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-900">Total Value</th>
                 <th className="text-center py-3 px-2 font-medium text-gray-900">Significance</th>
               </tr>
             </thead>
@@ -163,12 +156,6 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
                         {item.conversionRate.toFixed(2)}%
                       </span>
                     </td>
-                    <td className="text-right py-3 px-2 text-gray-600">
-                      ${item.averageValue.toFixed(2)}
-                    </td>
-                    <td className="text-right py-3 px-2 text-gray-600">
-                      ${item.totalValue.toLocaleString()}
-                    </td>
                     <td className="text-center py-3 px-2">
                       {significance ? (
                         <Badge 
@@ -192,7 +179,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
 
         {/* Summary Stats */}
         <div className="mt-6 pt-4 border-t border-gray-100">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {data.reduce((sum, item) => sum + item.sessions, 0).toLocaleString()}
@@ -211,12 +198,6 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
                   data.reduce((sum, item) => sum + item.sessions, 0) * 100).toFixed(2)}%
               </div>
               <div className="text-gray-500">Overall Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                ${data.reduce((sum, item) => sum + item.totalValue, 0).toLocaleString()}
-              </div>
-              <div className="text-gray-500">Total Value</div>
             </div>
           </div>
         </div>

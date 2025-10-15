@@ -72,9 +72,7 @@ export function UserJourney({ data, sessions, selectedSessionId, sessionDetails,
       case 'CONVERSION':
         return `Completed goal: ${event.properties?.goal || 'conversion'}`;
       case 'PURCHASE':
-        const amount = event.properties?.revenue ?? event.properties?.amount;
-        const currency = event.properties?.currency || '';
-        return amount != null ? `Purchase${currency ? ` (${currency})` : ''}: ${amount}` : 'Purchase completed';
+        return 'Purchase completed';
       case 'CUSTOM':
         return event.properties?.description || 'Custom event';
       default:

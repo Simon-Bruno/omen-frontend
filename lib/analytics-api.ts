@@ -300,7 +300,7 @@ export const analyticsApi = {
       variantId: rate.variantId,
       sessions: rate.sessions,
       conversions: rate.conversions,
-      conversionRate: rate.conversionRate * 100, // Convert to percentage
+      conversionRate: rate.conversionRate * 100, // Convert to percentage (0.1 -> 10%)
       averageValue: rate.averageValue,
       totalValue: rate.totalValue,
     }));

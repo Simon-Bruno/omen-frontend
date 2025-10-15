@@ -21,9 +21,8 @@ import { ExposureStats } from '@/components/analytics/ExposureStats';
 import { UserJourney } from '@/components/analytics/UserJourney';
 import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
-import { PurchaseStats } from '@/components/analytics/PurchaseStats';
-import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, PurchaseStats as PurchaseStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
-import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, ShoppingCart, Trash2, Settings, ChevronDown, Database } from 'lucide-react';
+import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
+import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, Trash2, Settings, ChevronDown, Database } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { isAuthenticated, isLoading, user, project } = useAuth();
@@ -31,7 +30,7 @@ export default function AnalyticsPage() {
   const router = useRouter();
   
   // State management
-  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'purchases' | 'traffic' | 'journey'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'traffic' | 'journey'>('overview');
   const [error, setError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false); // Toggle for mock vs real data
   const [isResetting, setIsResetting] = useState(false);
@@ -45,33 +44,25 @@ export default function AnalyticsPage() {
   const [funnelData, setFunnelData] = useState<NewFunnelAnalysis | null>(null);
   const [conversionData, setConversionData] = useState<ConversionRate[]>([]);
   const [exposureData, setExposureData] = useState<ExposureStatsType[]>([]);
-  const [purchaseData, setPurchaseData] = useState<PurchaseStatsType[]>([]);
   const [journeyData, setJourneyData] = useState<UserJourneyEvent[]>([]);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   
+  // Sliding underline indicator state for tabs
+  const tabsContainerRef = React.useRef<HTMLDivElement | null>(null);
+  const tabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicator, setIndicator] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+
+  // Update indicator function
+  const updateIndicator = () => {
+    const container = tabsContainerRef.current;
+    const activeEl = tabRefs.current[activeTab];
+    if (!container || !activeEl) return;
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeEl.getBoundingClientRect();
+    setIndicator({ left: activeRect.left - containerRect.left, width: activeRect.width });
+  };
+  
   // Mock data for demonstration (replace with real API calls)
-  const mockPurchaseData: PurchaseStatsType[] = [
-    {
-      experimentId: 'exp-123',
-      variantId: 'A',
-      sessions: 50,
-      purchases: 3,
-      purchaseRate: 0.06,
-      totalRevenue: 89.97,
-      averageOrderValue: 29.99,
-      revenuePerSession: 1.80
-    },
-    {
-      experimentId: 'exp-123',
-      variantId: 'B',
-      sessions: 48,
-      purchases: 5,
-      purchaseRate: 0.104,
-      totalRevenue: 149.95,
-      averageOrderValue: 29.99,
-      revenuePerSession: 3.12
-    }
-  ];
 
   const mockFunnelData: NewFunnelAnalysis = {
     experimentId: 'exp-123',
@@ -147,18 +138,18 @@ export default function AnalyticsPage() {
       variantId: 'control',
       sessions: 5000,
       conversions: 500,
-      conversionRate: 10.0,
-      averageValue: 25.50,
-      totalValue: 12750,
+      conversionRate: 10.0, // 10% as percentage (matching funnel data format)
+      averageValue: 0,
+      totalValue: 0,
     },
     {
       experimentId: 'exp-123',
       variantId: 'variant-1',
       sessions: 5000,
       conversions: 700,
-      conversionRate: 14.0,
-      averageValue: 28.75,
-      totalValue: 20125,
+      conversionRate: 14.0, // 14% as percentage (matching funnel data format)
+      averageValue: 0,
+      totalValue: 0,
     },
   ];
 
@@ -207,7 +198,7 @@ export default function AnalyticsPage() {
       eventType: 'CONVERSION',
       sessionId: 'session-abc123',
       viewId: 'view-3',
-      properties: { goal: 'purchase', value: 25.50 },
+      properties: { goal: 'conversion' },
       timestamp: Date.now() - 3400000,
       createdAt: new Date(Date.now() - 3400000).toISOString(),
     },
@@ -285,7 +276,6 @@ export default function AnalyticsPage() {
       setFunnelData(mockFunnelData);
       setConversionData(mockConversionData);
       setExposureData(mockExposureData);
-      setPurchaseData(mockPurchaseData);
       setJourneyData(mockJourneyData);
       setError(null);
     } else {
@@ -304,7 +294,6 @@ export default function AnalyticsPage() {
           setFunnelData(mockFunnelData);
           setConversionData(mockConversionData);
           setExposureData(mockExposureData);
-          setPurchaseData(mockPurchaseData);
           setJourneyData(mockJourneyData);
           setError('No project ID or experiment selected. Showing mock data instead.');
           setLoading(false);
@@ -312,11 +301,10 @@ export default function AnalyticsPage() {
         }
         
         // Load all data in parallel
-        const [funnel, conversions, exposures, purchases] = await Promise.all([
+        const [funnel, conversions, exposures] = await Promise.all([
           analyticsApi.getFunnelAnalysis(projectId, experimentId),
           analyticsApi.getConversionRates(projectId, experimentId),
           analyticsApi.getExposureStats(projectId, experimentId),
-          analyticsApi.getPurchaseStats(projectId, experimentId),
         ]);
         
         // Load journey data separately if we have a session selected
@@ -329,7 +317,6 @@ export default function AnalyticsPage() {
         setFunnelData(funnel);
         setConversionData(conversions);
         setExposureData(exposures);
-        setPurchaseData(purchases);
         setJourneyData(journey);
       } catch (err) {
         console.error('Failed to load analytics data:', err);
@@ -339,7 +326,6 @@ export default function AnalyticsPage() {
         setFunnelData(mockFunnelData);
         setConversionData(mockConversionData);
         setExposureData(mockExposureData);
-        setPurchaseData(mockPurchaseData);
         setJourneyData(mockJourneyData);
       } finally {
         setLoading(false);
@@ -385,6 +371,14 @@ export default function AnalyticsPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Update indicator when activeTab changes
+  useEffect(() => {
+    updateIndicator();
+    const onResize = () => updateIndicator();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [activeTab]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -405,110 +399,85 @@ export default function AnalyticsPage() {
     { id: 'experiments', label: 'Experiments', icon: Target },
     { id: 'funnel', label: 'Funnel Analysis', icon: TrendingUp },
     { id: 'conversions', label: 'A/B Test Results', icon: Target },
-    { id: 'purchases', label: 'Purchase Analytics', icon: ShoppingCart },
     { id: 'traffic', label: 'Traffic Overview', icon: Users },
     { id: 'journey', label: 'User Journey', icon: Calendar },
   ];
 
   const renderOverview = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-semibold">Total Sessions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
+    <div className="space-y-6">
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+         <div className="bg-white rounded-lg border border-slate-200 p-6">
+           <div className="mb-2">
+             <h3 className="text-sm font-semibold text-slate-700">Total Sessions</h3>
+           </div>
+          <div className="text-3xl font-semibold text-slate-900 mb-1">
             {funnelData?.overallStats.totalSessions.toLocaleString() || '0'}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {funnelData?.overallStats.totalExposures.toLocaleString() || '0'} exposures
-          </p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-semibold">Conversion Rate</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
+          <div className="flex items-center gap-1 text-sm text-slate-500">
+            <span>{funnelData?.overallStats.totalExposures.toLocaleString() || '0'}</span>
+            <span>exposures</span>
+          </div>
+        </div>
+        
+         <div className="bg-white rounded-lg border border-slate-200 p-6">
+           <div className="mb-2">
+             <h3 className="text-sm font-semibold text-slate-700">Conversion Rate</h3>
+           </div>
+          <div className="text-3xl font-semibold text-slate-900 mb-1">
             {funnelData?.overallStats.overallConversionRate.toFixed(1) || '0.0'}%
           </div>
-          <p className="text-xs text-muted-foreground">
-            {funnelData?.overallStats.totalConversions.toLocaleString() || '0'} conversions
-          </p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-semibold">Active Variants</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
+          <div className="flex items-center gap-1 text-sm text-slate-500">
+            <span>{funnelData?.overallStats.totalConversions.toLocaleString() || '0'}</span>
+            <span>conversions</span>
+          </div>
+        </div>
+        
+         <div className="bg-white rounded-lg border border-slate-200 p-6">
+           <div className="mb-2">
+             <h3 className="text-sm font-semibold text-slate-700">Active Variants</h3>
+           </div>
+          <div className="text-3xl font-semibold text-slate-900 mb-1">
             {funnelData?.variants.length || 0}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-sm text-slate-500">
             {funnelData?.variants.map(v => v.variantId).join(', ') || 'None'}
-          </p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-semibold">Best Performer</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-semibold">
-              {funnelData?.variants && funnelData.variants.length > 0 
+          </div>
+        </div>
+        
+         <div className="bg-white rounded-lg border border-slate-200 p-6">
+           <div className="mb-2">
+             <h3 className="text-sm font-semibold text-slate-700">Best Performer</h3>
+           </div>
+          <div className="text-3xl font-semibold text-slate-900 mb-1">
+            {funnelData?.variants && funnelData.variants.length > 0 
               ? funnelData.variants.reduce((best, current) => 
                   current.conversionRate > best.conversionRate ? current : best
                 ).variantId 
               : 'N/A'}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-sm text-slate-500">
             {funnelData?.variants && funnelData.variants.length > 0 
               ? funnelData.variants.reduce((best, current) => 
                   current.conversionRate > best.conversionRate ? current : best
                 ).conversionRate.toFixed(1) + '% conversion'
               : '0.0% conversion'}
-          </p>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
-
-  // Sliding underline indicator state for tabs
-  const tabsContainerRef = React.useRef<HTMLDivElement | null>(null);
-  const tabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
-  const [indicator, setIndicator] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
-
-  const updateIndicator = () => {
-    const container = tabsContainerRef.current;
-    const activeEl = tabRefs.current[activeTab];
-    if (!container || !activeEl) return;
-    const containerRect = container.getBoundingClientRect();
-    const activeRect = activeEl.getBoundingClientRect();
-    setIndicator({ left: activeRect.left - containerRect.left, width: activeRect.width });
-  };
-
-  useEffect(() => {
-    updateIndicator();
-    const onResize = () => updateIndicator();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [activeTab]);
 
   const renderContent = () => {
     // Show selection prompt if no experiment is selected
     if (!selectedExperimentId) {
       return (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BarChart3 className="w-8 h-8 text-gray-400" />
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BarChart3 className="w-8 h-8 text-slate-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Select an Experiment</h3>
-          <p className="text-gray-500">Choose an experiment from the dropdown above to view analytics data.</p>
+          <h3 className="text-lg font-semibold text-slate-700 mb-2">Select an Experiment</h3>
+          <p className="text-slate-500 max-w-md mx-auto">Choose an experiment from the dropdown above to view analytics data and performance insights.</p>
         </div>
       );
     }
@@ -516,7 +485,7 @@ export default function AnalyticsPage() {
     switch (activeTab) {
       case 'overview':
         return (
-          <div>
+          <div className="space-y-6">
             {renderOverview()}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {funnelData && <FunnelChart data={funnelData} />}
@@ -530,19 +499,17 @@ export default function AnalyticsPage() {
         return funnelData ? <FunnelChart data={funnelData} /> : <div>No funnel data available</div>;
       case 'conversions':
         return conversionData.length > 0 ? <ConversionTable data={conversionData} /> : <div>No conversion data available</div>;
-      case 'purchases':
-        return purchaseData.length > 0 ? <PurchaseStats data={purchaseData} /> : <div>No purchase data available</div>;
       case 'traffic':
         return exposureData.length > 0 ? <ExposureStats data={exposureData} /> : <div>No traffic data available</div>;
       case 'journey':
         if (!selectedExperimentId) {
           return (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-gray-400" />
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-slate-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Select an Experiment</h3>
-              <p className="text-gray-500">Choose an experiment to view user journeys.</p>
+              <h3 className="text-lg font-semibold text-slate-700 mb-2">Select an Experiment</h3>
+              <p className="text-slate-500 max-w-md mx-auto">Choose an experiment to view detailed user journeys and session analytics.</p>
             </div>
           );
         }
@@ -559,37 +526,50 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-6 py-8">
+    <div className="min-h-screen bg-slate-50">
+      <div className="h-full  py-6 flex flex-col max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+              <h1 className="text-2xl font-semibold text-slate-700">Analytics Dashboard</h1>
+              <p className="text-sm text-slate-500 mt-1">
+                {selectedExperimentId ? 'Experiment insights and performance metrics' : 'Select an experiment to view analytics'}
+              </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* Experiment Selector */}
+              {project?.id && (
+                <ExperimentSelector
+                  selectedExperimentId={selectedExperimentId}
+                  onExperimentSelect={setSelectedExperimentId}
+                  projectId={project.id}
+                  disabled={loading}
+                />
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Settings className="w-4 h-4" />
-                    Project Settings
-                    <ChevronDown className="w-4 h-4 ml-1 opacity-60" />
+                  <Button variant="outline" size="sm" className="h-8 px-3 text-sm">
+                    <Settings className="w-4 h-4 mr-1" />
+                    Settings
+                    <ChevronDown className="w-3 h-3 ml-1 opacity-60" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="text-xs font-medium text-slate-500">Quick Actions</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => router.push('/experiments/create')}>
+                  <DropdownMenuItem onSelect={() => router.push('/experiments/create')} className="text-sm">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Experiment
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => loadData()} disabled={loading || !selectedExperimentId}>
+                  <DropdownMenuItem onSelect={() => loadData()} disabled={loading || !selectedExperimentId} className="text-sm">
                     <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                    {loading ? 'Loading...' : 'Refresh'}
+                    {loading ? 'Loading...' : 'Refresh Data'}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => setUseMockData(!useMockData)}
                     disabled={loading}
+                    className="text-sm"
                   >
                     <Database className="w-4 h-4 mr-2" />
                     {useMockData ? 'Use Live Data' : 'Use Mock Data'}
@@ -598,19 +578,15 @@ export default function AnalyticsPage() {
                   <DropdownMenuItem
                     onSelect={() => setShowResetConfirm(true)}
                     disabled={loading || isResetting || !selectedExperimentId}
-                    className="text-red-600 focus:bg-red-50"
+                    className="text-sm text-red-600 focus:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Reset Data
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Badge variant={useMockData ? 'secondary' : 'default'}>
-                {useMockData ? 'Mock Data' : 'Live Data'}
-              </Badge>
             </div>
           </div>
-
         </div>
 
         {showResetConfirm && (
@@ -636,43 +612,44 @@ export default function AnalyticsPage() {
         )}
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
+        <div className="border-b border-slate-200 mb-6">
           <nav className="-mb-px flex items-center justify-between">
-            <div ref={tabsContainerRef} className="relative flex space-x-8">
+            <div ref={tabsContainerRef} className="relative flex space-x-6">
               {tabs.map((tab) => {
+                const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     ref={(el) => { tabRefs.current[tab.id] = el; }}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center py-2 px-1 font-medium text-sm ${
+                    className={`flex items-center gap-2 py-3 px-1 font-medium text-sm transition-colors ${
                       activeTab === tab.id
-                        ? 'text-black'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'text-slate-900'
+                        : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
-                    {tab.label}
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 );
               })}
               <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-2 h-[2px] rounded bg-black transition-all duration-300 ease-out"
+                className="pointer-events-none absolute -bottom-px h-[2px] rounded bg-slate-900 transition-all duration-300 ease-out"
                 style={{ left: `${indicator.left}px`, width: `${indicator.width}px` }}
               />
             </div>
             
-            {/* Experiment Selector */}
-            {project?.id && (
-              <div className="ml-8 mb-2">
-                <ExperimentSelector
-                  selectedExperimentId={selectedExperimentId}
-                  onExperimentSelect={setSelectedExperimentId}
-                  projectId={project.id}
-                  disabled={loading}
-                />
-              </div>
-            )}
+            {/* Mock Data Badge */}
+            <Badge 
+              className={`rounded-full ${
+                useMockData 
+                  ? 'bg-amber-100 text-amber-700 border-amber-200' 
+                  : 'bg-emerald-100 text-emerald-700 border-emerald-200'
+              }`}
+            >
+              {useMockData ? 'Mock Data' : 'Live Data'}
+            </Badge>
           </nav>
         </div>
 
@@ -706,10 +683,10 @@ export default function AnalyticsPage() {
 
         {/* Loading State */}
         {loading && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-blue-800">Loading analytics data...</p>
+              <div className="w-4 h-4 border-2 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-slate-700">Loading analytics data...</p>
             </div>
           </div>
         )}
