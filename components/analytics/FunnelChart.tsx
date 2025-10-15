@@ -284,7 +284,7 @@ export function FunnelChart({ data, className }: FunnelChartProps) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">Overall Conversion Rate</span>
-                            <span className="font-medium text-green-600">{(data.overallStats?.overallConversionRate || 0).toFixed(1)}%</span>
+                            <span className="font-medium text-green-600">{(data.overallStats?.overallConversionRate || 0).toFixed(2)}%</span>
                         </div>
                     </div>
                     

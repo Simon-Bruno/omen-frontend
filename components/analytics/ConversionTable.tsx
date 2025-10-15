@@ -146,7 +146,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
                     </td>
                     <td className="text-right py-3 px-2">
                       <span className="font-medium text-gray-900">
-                        {(item.conversionRate / 100).toFixed(3)}%
+                        {(item.conversionRate / 100).toFixed(2)}%
                       </span>
                     </td>
                     <td className="text-right py-3 px-2">
@@ -183,7 +183,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {(data.reduce((sum, item) => sum + item.conversions, 0) / 
-                  data.reduce((sum, item) => sum + item.sessions, 0) * 100).toFixed(3)}%
+                  data.reduce((sum, item) => sum + item.sessions, 0) * 100).toFixed(2)}%
               </div>
               <div className="text-gray-500">Overall Rate</div>
             </div>
