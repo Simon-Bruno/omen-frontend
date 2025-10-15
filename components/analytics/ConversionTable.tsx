@@ -4,8 +4,6 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ConversionRate } from '@/lib/analytics-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { analyticsUtils } from '@/lib/analytics-api';
 
 interface ConversionTableProps {
   data: ConversionRate[];
@@ -31,7 +29,7 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
         <div className="bg-white p-3 border border-gray-100 rounded-xl shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
           <p className="text-sm text-gray-600">
-            Conversion Rate: <span className="font-medium">{(data.conversionRate * 100).toFixed(2)}%</span>
+            Conversion Rate: <span className="font-medium">{data.conversionRate.toFixed(2)}%</span>
           </p>
           <p className="text-sm text-gray-600">
             Sessions: <span className="font-medium">{data.sessions.toLocaleString()}</span>
@@ -45,27 +43,22 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
     return null;
   };
 
-  // Calculate statistical significance if we have control and variant data
-  const getSignificanceInfo = (variant: ConversionRate, control: ConversionRate | undefined) => {
-    if (!control || variant.variantId === control.variantId) return null;
-    
-    try {
-      const significance = analyticsUtils.calculateSignificance(
-        control.conversionRate / 100, // Convert percentage to decimal
-        control.sessions,
-        variant.conversionRate / 100, // Convert percentage to decimal
-        variant.sessions
-      );
-      
-      return significance;
-    } catch (error) {
-      console.warn('Error calculating significance:', error);
-      return null;
-    }
-  };
 
   // Find control variant by variantId
   const controlVariant = data.find(v => v.variantId === 'control');
+
+  // Calculate uplift/downlift percentage
+  const calculateUplift = (variant: ConversionRate) => {
+    if (!controlVariant || variant.variantId === controlVariant.variantId) return null;
+    
+    const controlRate = controlVariant.conversionRate / 100;
+    const variantRate = variant.conversionRate / 100;
+    
+    if (controlRate === 0) return null; // Avoid division by zero
+    
+    const uplift = ((variantRate - controlRate) / controlRate) * 100;
+    return uplift;
+  };
 
   return (
     <Card className={className}>
@@ -124,13 +117,13 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Sessions</th>
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Conversions</th>
                 <th className="text-right py-3 px-2 font-medium text-gray-900">Conversion Rate</th>
-                <th className="text-center py-3 px-2 font-medium text-gray-900">Significance</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-900">Uplift/Downlift</th>
               </tr>
             </thead>
             <tbody>
               {data.map((item, index) => {
-                const significance = getSignificanceInfo(item, controlVariant);
                 const isControl = item.variantId === 'control';
+                const uplift = calculateUplift(item);
                 
                 return (
                   <tr key={item.variantId} className="border-b border-gray-100 hover:bg-gray-50">
@@ -156,18 +149,13 @@ export function ConversionTable({ data, className }: ConversionTableProps) {
                         {(item.conversionRate / 100).toFixed(2)}%
                       </span>
                     </td>
-                    <td className="text-center py-3 px-2">
-                      {significance ? (
-                        <Badge 
-                          variant={significance.isSignificant ? "default" : "secondary"}
-                          className={significance.isSignificant ? "bg-green-100 text-green-800" : ""}
-                        >
-                          {significance.isSignificant ? 'Significant' : 'Not Significant'}
-                        </Badge>
-                      ) : isControl ? (
-                        <span className="text-gray-400 text-xs">Control</span>
+                    <td className="text-right py-3 px-2">
+                      {uplift !== null ? (
+                        <span className={`font-medium ${uplift >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {uplift >= 0 ? '+' : ''}{uplift.toFixed(1)}%
+                        </span>
                       ) : (
-                        <span className="text-gray-400 text-xs">No Control</span>
+                        <span className="text-gray-400 text-xs">-</span>
                       )}
                     </td>
                   </tr>
