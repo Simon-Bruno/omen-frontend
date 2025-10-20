@@ -36,3 +36,21 @@ export function getScreenshotUrl(screenshotPath: string | null | undefined): str
       : 'http://localhost:3001');
   return `${backendUrl}${screenshotPath}`;
 }
+
+/**
+ * Builds the preview base URL from project info.
+ * If `isShopify` is true, uses `${shopDomain}.myshopify.com`.
+ * Otherwise, uses `shopDomain` as-is.
+ * Ensures the URL has a protocol (defaults to https).
+ */
+export function getPreviewBaseUrl(project?: { shopDomain?: string; isShopify?: boolean }): string {
+  const fallback = process.env.NEXT_PUBLIC_PREVIEW_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:9292');
+
+  const rawDomain = project?.shopDomain ? (project.isShopify ? `${project.shopDomain}.myshopify.com` : project.shopDomain) : null;
+
+  if (!rawDomain) return fallback;
+
+  const hasProtocol = rawDomain.startsWith('http://') || rawDomain.startsWith('https://');
+  const withProtocol = hasProtocol ? rawDomain : `https://${rawDomain}`;
+  return withProtocol;
+}

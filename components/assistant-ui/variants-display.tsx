@@ -1,20 +1,20 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, CheckCircle, ChevronRight, Zap, Image, Eye, X, AlertCircle, Clock, Check, RefreshCcw } from "lucide-react";
+import { ChevronRight, X, AlertCircle, Clock, Check, RefreshCcw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Variant, JobStatus } from "@/lib/chat-types";
 import { chatApi } from "@/lib/chat-api";
-import { getScreenshotUrl } from "@/lib/utils";
+import { getPreviewBaseUrl } from "@/lib/utils";
 import { useVariantJobs } from "@/contexts/variant-jobs-context";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/auth-context";
 
 export const VariantsDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
+  const { project } = useAuth();
   
-  // Modal states
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  // Feedback modal states
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   
@@ -37,87 +37,18 @@ export const VariantsDisplay = (props: any) => {
   const { addVariantJob, updateVariantJobStatus, removeVariantJob } = useVariantJobs();
 
 
-  // ScreenshotImage component with error handling
-  const ScreenshotImage = ({ 
-    screenshotPath, 
-    alt, 
-    className 
-  }: { 
-    screenshotPath: string; 
-    alt: string; 
-    className: string; 
-  }) => {
-    const screenshotUrl = getScreenshotUrl(screenshotPath);
-
-    // Log the URL being used for rendering
-    console.log('🖼️ ScreenshotImage rendering:', {
-      originalPath: screenshotPath,
-      generatedUrl: screenshotUrl,
-      alt
-    });
-
-    if (!screenshotUrl) {
-      return (
-        <div className={`${className} bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center`}>
-          <div className="text-center text-gray-500">
-            <Image className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Screenshot unavailable</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <img
-        src={screenshotUrl}
-        alt={alt}
-        className={className}
-        loading="lazy"
-        onError={(e) => {
-          console.error('❌ Failed to load screenshot:', {
-            originalPath: screenshotPath,
-            generatedUrl: screenshotUrl,
-            error: e
-          });
-          e.currentTarget.style.display = 'none';
-        }}
-        onLoad={() => {
-          console.log('✅ Screenshot loaded successfully:', {
-            originalPath: screenshotPath,
-            generatedUrl: screenshotUrl
-          });
-        }}
-      />
-    );
-  };
-
   // Handle variant click - open preview in new tab
   const handleVariantClick = (variant: Variant, jobId?: string) => {
     console.log('🖱️ Variant clicked:', variant.variant_label, 'jobId:', jobId);
     
     if (jobId) {
-      // Determine the correct Shopify URL based on environment
-      const isDevelopment = process.env.NODE_ENV === 'development' || 
-                           (typeof window !== 'undefined' && window.location.hostname === 'localhost');
-      
-      const shopifyUrl = isDevelopment 
-        ? 'http://localhost:9292' // Your local Shopify development store
-        : 'https://shop.omen.so'; // Production store
-      
-      const previewUrl = `${shopifyUrl}/?preview=true&jobId=${jobId}`;
+      const base = getPreviewBaseUrl(project || undefined);
+      const previewUrl = `${base}/?preview=true&jobId=${jobId}`;
       console.log('🔗 Opening preview URL:', previewUrl);
       window.open(previewUrl, '_blank', 'noopener,noreferrer');
     } else {
-      // Fallback to modal for variants without jobId
-      setSelectedVariant(variant);
-      setIsModalOpen(true);
+      // No preview available without jobId
     }
-  };
-
-  // Close modal
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedVariant(null);
   };
 
   // Handle feedback modal
@@ -194,18 +125,6 @@ export const VariantsDisplay = (props: any) => {
                 : resultData.variantsSchema;
               
               if (parsedData.variants && parsedData.variants.length > 0) {
-                // Log all screenshot URLs for this job
-                const screenshotUrls = parsedData.variants.map((variant: any) => ({
-                  variant_label: variant.variant_label,
-                  originalPath: variant.screenshot,
-                  generatedUrl: getScreenshotUrl(variant.screenshot)
-                }));
-                
-                console.log('📸 All Screenshot URLs for job:', {
-                  jobId,
-                  screenshotUrls
-                });
-                
                 setVariants(prev => [...prev, ...parsedData.variants]);
               }
             } catch (e) {
@@ -270,15 +189,7 @@ export const VariantsDisplay = (props: any) => {
             realVariant = { ...realVariant, ...improvedVariantByJobId[jobId] };
           }
           
-          // Log screenshot data from source of truth
-          if (realVariant?.screenshot) {
-            console.log('📸 Screenshot from source of truth:', {
-              jobId,
-              variant_label: realVariant.variant_label,
-              originalScreenshotPath: realVariant.screenshot,
-              generatedUrl: getScreenshotUrl(realVariant.screenshot)
-            });
-          }
+          // No screenshot handling
         } catch (e) {
           console.error(`Failed to parse completed job ${jobId}:`, e);
         }
@@ -299,7 +210,6 @@ export const VariantsDisplay = (props: any) => {
         variant_label: `Variant ${index + 1}`,
         description: isCompleted ? 'Loading...' : isFailed ? 'Failed to generate' : 'Creating...',
         rationale: isCompleted ? 'Processing complete' : isFailed ? 'Generation failed' : 'Creating your variant',
-        screenshot: null,
         css_code: '',
         html_code: '',
         target_selector: '',
@@ -320,7 +230,6 @@ export const VariantsDisplay = (props: any) => {
             variant_label: "Variant 1",
             description: "Creating...",
             rationale: "Creating your first variant",
-            screenshot: null,
             css_code: '',
             html_code: '',
             target_selector: '',
@@ -338,7 +247,6 @@ export const VariantsDisplay = (props: any) => {
             variant_label: "Variant 2", 
             description: "Creating...",
             rationale: "Creating your second variant",
-            screenshot: null,
             css_code: '',
             html_code: '',
             target_selector: '',
@@ -356,7 +264,6 @@ export const VariantsDisplay = (props: any) => {
             variant_label: "Variant 3",
             description: "Creating...",
             rationale: "Creating your third variant", 
-            screenshot: null,
             css_code: '',
             html_code: '',
             target_selector: '',
@@ -578,38 +485,7 @@ export const VariantsDisplay = (props: any) => {
           </motion.div>
         </div>
 
-        {/* Variant Preview Modal */}
-        {isModalOpen && selectedVariant && (
-          <div 
-            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-            onClick={closeModal}
-          >
-            <div 
-              className="relative max-w-5xl max-h-[90vh] bg-white rounded-lg overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-4 border-b">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{selectedVariant.variant_label}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{selectedVariant.description}</p>
-                </div>
-                <button
-                  onClick={closeModal}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="size-5 text-gray-500" />
-                </button>
-              </div>
-              <div className="p-4">
-                <ScreenshotImage
-                  screenshotPath={selectedVariant.screenshot || ''}
-                  alt={`Screenshot of ${selectedVariant.variant_label}`}
-                  className="max-w-full max-h-[70vh] w-auto h-auto rounded-lg border border-gray-200"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* No variant preview modal */}
 
         {/* Simple Feedback Modal */}
         {isFeedbackModalOpen && selectedJobId && createPortal(

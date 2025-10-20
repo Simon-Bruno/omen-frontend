@@ -17,12 +17,15 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { getPreviewBaseUrl } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 
 // (Pie chart helpers removed as we no longer render the chart)
 
 export const ExperimentPreviewDisplay = (props: any) => {
   const { toolName, argsText, result, status } = props;
+  const { project } = useAuth();
 
   const [experimentData, setExperimentData] = useState<any>(null);
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -476,14 +479,8 @@ export const ExperimentPreviewDisplay = (props: any) => {
                                 base + (index === count - 1 ? rem : 0);
                               const handleVariantClick = () => {
                                 if (variant.jobId) {
-                                  const isDevelopment =
-                                    process.env.NODE_ENV === "development" ||
-                                    (typeof window !== "undefined" &&
-                                      window.location.hostname === "localhost");
-                                  const shopifyUrl = isDevelopment
-                                    ? "http://localhost:9292"
-                                    : "https://shop.omen.so";
-                                  const previewUrl = `${shopifyUrl}/?preview=true&jobId=${variant.jobId}`;
+                                  const base = getPreviewBaseUrl(project || undefined);
+                                  const previewUrl = `${base}/?preview=true&jobId=${variant.jobId}`;
                                   window.open(
                                     previewUrl,
                                     "_blank",
