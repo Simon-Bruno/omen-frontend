@@ -17,12 +17,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FunnelChart } from '@/components/analytics/FunnelChart';
 import { ConversionTable } from '@/components/analytics/ConversionTable';
+import { PurchaseStats } from '@/components/analytics/PurchaseStats';
 import { ExposureStats } from '@/components/analytics/ExposureStats';
 import { UserJourney } from '@/components/analytics/UserJourney';
 import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
-import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
-import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, Trash2, Settings, ChevronDown, Database } from 'lucide-react';
+import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, PurchaseStats as PurchaseStatsType, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
+import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, Trash2, Settings, ChevronDown, Database, DollarSign } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { isAuthenticated, isLoading, user, project } = useAuth();
@@ -30,7 +31,7 @@ export default function AnalyticsPage() {
   const router = useRouter();
   
   // State management
-  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'traffic' | 'journey'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'purchases' | 'traffic' | 'journey'>('overview');
   const [error, setError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false); // Toggle for mock vs real data
   const [isResetting, setIsResetting] = useState(false);
@@ -43,6 +44,7 @@ export default function AnalyticsPage() {
   // Data state
   const [funnelData, setFunnelData] = useState<NewFunnelAnalysis | null>(null);
   const [conversionData, setConversionData] = useState<ConversionRate[]>([]);
+  const [purchaseData, setPurchaseData] = useState<PurchaseStatsType[]>([]);
   const [exposureData, setExposureData] = useState<ExposureStatsType[]>([]);
   const [journeyData, setJourneyData] = useState<UserJourneyEvent[]>([]);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
@@ -168,6 +170,29 @@ export default function AnalyticsPage() {
     },
   ];
 
+  const mockPurchaseData: PurchaseStatsType[] = [
+    {
+      experimentId: 'exp-123',
+      variantId: 'control',
+      sessions: 4500,
+      purchases: 450,
+      purchaseRate: 0.10, // 10%
+      totalRevenue: 22500, // $225 average order value
+      averageOrderValue: 50,
+      revenuePerSession: 5,
+    },
+    {
+      experimentId: 'exp-123',
+      variantId: 'variant-1',
+      sessions: 4800,
+      purchases: 720,
+      purchaseRate: 0.15, // 15%
+      totalRevenue: 43200, // $60 average order value
+      averageOrderValue: 60,
+      revenuePerSession: 9,
+    },
+  ];
+
   const mockJourneyData: UserJourneyEvent[] = [
     {
       id: 'evt-1',
@@ -275,6 +300,7 @@ export default function AnalyticsPage() {
       // Load mock data
       setFunnelData(mockFunnelData);
       setConversionData(mockConversionData);
+      setPurchaseData(mockPurchaseData);
       setExposureData(mockExposureData);
       setJourneyData(mockJourneyData);
       setError(null);
@@ -301,9 +327,10 @@ export default function AnalyticsPage() {
         }
         
         // Load all data in parallel
-        const [funnel, conversions, exposures] = await Promise.all([
+        const [funnel, conversions, purchases, exposures] = await Promise.all([
           analyticsApi.getFunnelAnalysis(projectId, experimentId),
           analyticsApi.getConversionRates(projectId, experimentId),
+          analyticsApi.getPurchaseStats(projectId, experimentId),
           analyticsApi.getExposureStats(projectId, experimentId),
         ]);
         
@@ -316,6 +343,7 @@ export default function AnalyticsPage() {
         
         setFunnelData(funnel);
         setConversionData(conversions);
+        setPurchaseData(purchases);
         setExposureData(exposures);
         setJourneyData(journey);
       } catch (err) {
@@ -399,6 +427,7 @@ export default function AnalyticsPage() {
     { id: 'experiments', label: 'Experiments', icon: Target },
     { id: 'funnel', label: 'Funnel Analysis', icon: TrendingUp },
     { id: 'conversions', label: 'A/B Test Results', icon: Target },
+    { id: 'purchases', label: 'Purchase Analytics', icon: DollarSign },
     { id: 'traffic', label: 'Traffic Overview', icon: Users },
     { id: 'journey', label: 'User Journey', icon: Calendar },
   ];
@@ -511,6 +540,8 @@ export default function AnalyticsPage() {
         return funnelData ? <FunnelChart data={funnelData} /> : <div>No funnel data available</div>;
       case 'conversions':
         return conversionData.length > 0 ? <ConversionTable data={conversionData} /> : <div>No conversion data available</div>;
+      case 'purchases':
+        return purchaseData.length > 0 ? <PurchaseStats data={purchaseData} /> : <div>No purchase data available</div>;
       case 'traffic':
         return exposureData.length > 0 ? <ExposureStats data={exposureData} /> : <div>No traffic data available</div>;
       case 'journey':
