@@ -131,6 +131,23 @@ export interface SessionDetails {
   journey: UserJourneyEvent[];
 }
 
+export interface GoalVariantBreakdown {
+  variantId: string;
+  conversions: number;
+}
+
+export interface GoalsBreakdownItem {
+  name: string;
+  type: string;
+  perVariant: GoalVariantBreakdown[];
+}
+
+export interface GoalsBreakdownResponse {
+  experimentId: string;
+  variants: string[];
+  goals: GoalsBreakdownItem[];
+}
+
 // API Error handling
 class AnalyticsApiError extends Error {
   constructor(
@@ -431,6 +448,15 @@ export const analyticsApi = {
 
     const response = await apiRequest<SessionDetails>(endpoint);
     return response;
+  },
+
+  /** Get per-goal conversions per variant */
+  async getGoalsBreakdown(
+    projectId: string,
+    experimentId: string
+  ): Promise<GoalsBreakdownResponse> {
+    const endpoint = `/api/analytics/goals-breakdown/${experimentId}`;
+    return apiRequest<GoalsBreakdownResponse>(endpoint);
   },
 
   /**

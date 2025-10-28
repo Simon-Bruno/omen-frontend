@@ -22,7 +22,7 @@ import { ExposureStats } from '@/components/analytics/ExposureStats';
 import { UserJourney } from '@/components/analytics/UserJourney';
 import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
-import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, PurchaseStats as PurchaseStatsType, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
+import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, PurchaseStats as PurchaseStatsType, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails, GoalsBreakdownResponse } from '@/lib/analytics-api';
 import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, Trash2, Settings, ChevronDown, Database, DollarSign } from 'lucide-react';
 
 export default function AnalyticsPage() {
@@ -47,6 +47,7 @@ export default function AnalyticsPage() {
   const [purchaseData, setPurchaseData] = useState<PurchaseStatsType[]>([]);
   const [exposureData, setExposureData] = useState<ExposureStatsType[]>([]);
   const [journeyData, setJourneyData] = useState<UserJourneyEvent[]>([]);
+  const [goalsBreakdown, setGoalsBreakdown] = useState<GoalsBreakdownResponse | null>(null);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   
   // Sliding underline indicator state for tabs
@@ -327,11 +328,12 @@ export default function AnalyticsPage() {
         }
         
         // Load all data in parallel
-        const [funnel, conversions, purchases, exposures] = await Promise.all([
+        const [funnel, conversions, purchases, exposures, goals] = await Promise.all([
           analyticsApi.getFunnelAnalysis(projectId, experimentId),
           analyticsApi.getConversionRates(projectId, experimentId),
           analyticsApi.getPurchaseStats(projectId, experimentId),
           analyticsApi.getExposureStats(projectId, experimentId),
+          analyticsApi.getGoalsBreakdown(projectId, experimentId),
         ]);
         
         // Load journey data separately if we have a session selected
@@ -346,6 +348,7 @@ export default function AnalyticsPage() {
         setPurchaseData(purchases);
         setExposureData(exposures);
         setJourneyData(journey);
+        setGoalsBreakdown(goals);
       } catch (err) {
         console.error('Failed to load analytics data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load analytics data');
@@ -355,6 +358,7 @@ export default function AnalyticsPage() {
         setConversionData(mockConversionData);
         setExposureData(mockExposureData);
         setJourneyData(mockJourneyData);
+        setGoalsBreakdown(null);
       } finally {
         setLoading(false);
       }
@@ -539,7 +543,56 @@ export default function AnalyticsPage() {
       case 'funnel':
         return funnelData ? <FunnelChart data={funnelData} /> : <div>No funnel data available</div>;
       case 'conversions':
-        return conversionData.length > 0 ? <ConversionTable data={conversionData} /> : <div>No conversion data available</div>;
+        return (
+          <div className="space-y-6">
+            {conversionData.length > 0 ? <ConversionTable data={conversionData} /> : <div>No conversion data available</div>}
+            {/* Goals table */}
+            {goalsBreakdown && goalsBreakdown.goals.length > 0 && (
+              <div className="bg-white rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Goals</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-slate-600 border-b">
+                        <th className="py-2 pr-4">Goal</th>
+                        <th className="py-2 pr-4">Type</th>
+                        {goalsBreakdown.variants.map(v => (
+                          <th key={v} className="py-2 pr-4">{v} Conv.</th>
+                        ))}
+                        <th className="py-2 pr-4">Uplift vs Control</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {goalsBreakdown.goals.map(goal => {
+                        const controlId = goalsBreakdown.variants[0];
+                        const per = Object.fromEntries(goal.perVariant.map(p => [p.variantId, p.conversions]));
+                        const controlConv = per[controlId] || 0;
+                        const bestVariant = goalsBreakdown.variants.slice(1).reduce((best, vid) => {
+                          const conv = per[vid] || 0;
+                          return conv > (per[best] || 0) ? vid : best;
+                        }, goalsBreakdown.variants[1] || controlId);
+                        const bestConv = per[bestVariant] || 0;
+                        const uplift = controlConv > 0 ? ((bestConv - controlConv) / controlConv) * 100 : (bestConv > 0 ? 100 : 0);
+                        return (
+                          <tr key={goal.name} className="border-b last:border-0">
+                            <td className="py-2 pr-4 font-medium text-slate-800">{goal.name}</td>
+                            <td className="py-2 pr-4 text-slate-600">{goal.type}</td>
+                            {goalsBreakdown.variants.map(v => (
+                              <td key={v} className="py-2 pr-4">{per[v] || 0}</td>
+                            ))}
+                            <td className="py-2 pr-4">
+                              <span className={`${uplift >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{uplift.toFixed(1)}%</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        );
       case 'purchases':
         return purchaseData.length > 0 ? <PurchaseStats data={purchaseData} /> : <div>No purchase data available</div>;
       case 'traffic':
