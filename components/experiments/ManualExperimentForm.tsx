@@ -672,6 +672,25 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                   </p>
                 </div>
 
+                {/* Body Classes tracking */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Body Classes (optional - for page type matching)
+                  </label>
+                  <Input
+                    type="text"
+                    value={goal.bodyClasses?.join(', ') || ''}
+                    onChange={(e) => {
+                      const classes = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+                      updateGoal(index, 'bodyClasses', classes.length > 0 ? classes : undefined);
+                    }}
+                    placeholder="e.g., catalog-category-view, cms-page-view"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Track pages with specific body classes (useful for Magento, etc.)
+                  </p>
+                </div>
+
                 {/* Optional value */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
