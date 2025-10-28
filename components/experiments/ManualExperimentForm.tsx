@@ -149,7 +149,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
         goals: goals.filter(g => g.name).map(g => ({
           name: g.name,
           type: g.type,
-          ...(g.role && { role: g.role }),
+          role: g.role || 'primary',
           ...(g.selector && { selector: g.selector }),
           ...(g.eventType && { eventType: g.eventType }),
           ...(g.customJs && { customJs: g.customJs }),
