@@ -18,6 +18,7 @@ interface Variant {
 interface Goal {
   name: string;
   type: 'conversion' | 'custom' | 'purchase';
+  role?: 'primary' | 'mechanism' | 'guardrail';
   selector?: string;
   eventType?: string;
   customJs?: string;
@@ -105,6 +106,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
     setGoals([...goals, {
       name: '',
       type: 'conversion',
+      role: 'primary',
       eventType: 'click',
     }]);
   };
@@ -147,6 +149,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
         goals: goals.filter(g => g.name).map(g => ({
           name: g.name,
           type: g.type,
+          ...(g.role && { role: g.role }),
           ...(g.selector && { selector: g.selector }),
           ...(g.eventType && { eventType: g.eventType }),
           ...(g.customJs && { customJs: g.customJs }),
@@ -561,6 +564,24 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Used in analytics to identify this conversion
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Role
+                    </label>
+                    <select
+                      value={goal.role || 'primary'}
+                      onChange={(e) => updateGoal(index, 'role', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="primary">Primary (main KPI)</option>
+                      <option value="mechanism">Mechanism (how it works)</option>
+                      <option value="guardrail">Guardrail (safety check)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Primary: Main success metric. Mechanism: How the variant works. Guardrail: Safety check.
                     </p>
                   </div>
 
