@@ -105,8 +105,6 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
     setGoals([...goals, {
       name: '',
       type: 'conversion',
-      selector: '',
-      eventType: 'click',
     }]);
   };
 
@@ -618,6 +616,25 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     JavaScript expression that returns true when goal should fire
+                  </p>
+                </div>
+
+                {/* Navigation/Pageview tracking */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Target URLs (optional - for navigation goals)
+                  </label>
+                  <Input
+                    type="text"
+                    value={goal.targetUrls?.join(', ') || ''}
+                    onChange={(e) => {
+                      const urls = e.target.value.split(',').map(u => u.trim()).filter(u => u);
+                      updateGoal(index, 'targetUrls', urls.length > 0 ? urls : undefined);
+                    }}
+                    placeholder="e.g., /collections/*, /products/*"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Track pageviews to these URLs. Works with all tracking methods above.
                   </p>
                 </div>
 
