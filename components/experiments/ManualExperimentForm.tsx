@@ -29,6 +29,7 @@ interface Goal {
   currency?: string;
   // Goal-specific targeting (optional - overrides experiment targeting)
   targetUrls?: string[];
+  bodyClasses?: string[];
   targeting?: {
     match: 'all' | 'any';
     timeoutMs?: number;
@@ -154,6 +155,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
           ...(g.eventType && { eventType: g.eventType }),
           ...(g.customJs && { customJs: g.customJs }),
           ...(g.targetUrls && g.targetUrls.length > 0 && { targetUrls: g.targetUrls }),
+          ...(g.bodyClasses && g.bodyClasses.length > 0 && { bodyClasses: g.bodyClasses }),
           ...(g.value !== undefined && { value: g.value }),
           ...(g.valueSelector && { valueSelector: g.valueSelector }),
           ...(g.currency && { currency: g.currency }),

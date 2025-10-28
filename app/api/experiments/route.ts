@@ -47,6 +47,7 @@ const goalSchema = z.object({
   currency: z.string().optional().default('USD'),
   // Goal-specific targeting (optional - overrides experiment targeting)
   targetUrls: z.array(z.string()).optional(),
+  bodyClasses: z.array(z.string()).optional(),
   targeting: domTargetingSchema,
 });
 
