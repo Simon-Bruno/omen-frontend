@@ -143,7 +143,17 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
           js: v.js || undefined,
           position: v.position || 'INNER',
         })),
-        goals: goals.filter(g => g.name), // Only include goals with names
+        goals: goals.filter(g => g.name).map(g => ({
+          name: g.name,
+          type: g.type,
+          ...(g.selector && { selector: g.selector }),
+          ...(g.eventType && { eventType: g.eventType }),
+          ...(g.customJs && { customJs: g.customJs }),
+          ...(g.targetUrls && g.targetUrls.length > 0 && { targetUrls: g.targetUrls }),
+          ...(g.value !== undefined && { value: g.value }),
+          ...(g.valueSelector && { valueSelector: g.valueSelector }),
+          ...(g.currency && { currency: g.currency }),
+        })),
       };
 
       // DEBUG: Log the payload being sent
