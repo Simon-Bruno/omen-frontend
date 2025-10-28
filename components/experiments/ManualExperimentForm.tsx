@@ -105,6 +105,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
     setGoals([...goals, {
       name: '',
       type: 'conversion',
+      eventType: 'click',
     }]);
   };
 
