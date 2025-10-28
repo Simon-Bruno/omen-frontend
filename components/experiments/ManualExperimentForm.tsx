@@ -63,6 +63,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
   const [minSessionsPerVariant, setMinSessionsPerVariant] = useState(1000);
   const [targetUrls, setTargetUrls] = useState('');
   const [targetingJson, setTargetingJson] = useState('');
+  const [allowedDevices, setAllowedDevices] = useState<string[]>(['mobile', 'tablet', 'desktop']);
 
   // Hypothesis state
   const [hypothesis, setHypothesis] = useState('');
@@ -181,6 +182,11 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
           // Not JSON, treat as comma-separated
           payload.targetUrls = targetUrls.split(',').map(url => url.trim()).filter(url => url);
         }
+      }
+
+      // Add device targeting if not all devices selected
+      if (allowedDevices.length > 0 && allowedDevices.length < 3) {
+        payload.allowedDevices = allowedDevices;
       }
 
       if (useCustomTraffic) {
@@ -332,6 +338,62 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
             />
             <p className="text-xs text-gray-500 mt-1">
               Leave empty to run on all pages. Use wildcards like /products/* for patterns.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Device Targeting
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowedDevices.includes('mobile')}
+                  onChange={(e) => {
+                    setAllowedDevices(prev =>
+                      e.target.checked
+                        ? [...prev, 'mobile']
+                        : prev.filter(d => d !== 'mobile')
+                    );
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Mobile</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowedDevices.includes('tablet')}
+                  onChange={(e) => {
+                    setAllowedDevices(prev =>
+                      e.target.checked
+                        ? [...prev, 'tablet']
+                        : prev.filter(d => d !== 'tablet')
+                    );
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Tablet</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowedDevices.includes('desktop')}
+                  onChange={(e) => {
+                    setAllowedDevices(prev =>
+                      e.target.checked
+                        ? [...prev, 'desktop']
+                        : prev.filter(d => d !== 'desktop')
+                    );
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Desktop</span>
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Select which device types should see this experiment. All devices selected by default.
             </p>
           </div>
 

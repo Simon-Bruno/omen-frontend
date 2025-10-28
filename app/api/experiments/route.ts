@@ -58,6 +58,7 @@ const createExperimentSchema = z.object({
   minSessionsPerVariant: z.number().min(1).optional().default(1000),
   targetUrls: z.array(z.string()).optional(),
   targeting: domTargetingSchema,
+  allowedDevices: z.array(z.enum(['mobile', 'tablet', 'desktop'])).optional(),
   hypothesis: hypothesisSchema,
   variants: z.array(variantSchema).min(1, 'At least one variant is required'),
   goals: z.array(goalSchema).optional(),
