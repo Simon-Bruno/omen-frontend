@@ -148,6 +148,40 @@ export interface GoalsBreakdownResponse {
   goals: GoalsBreakdownItem[];
 }
 
+// Event-related interfaces
+export interface AnalyticsEvent {
+  id: string;
+  projectId: string;
+  sessionId: string;
+  eventType: 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION' | 'CUSTOM' | 'PURCHASE';
+  properties: any;
+  assignedVariants?: Array<{
+    experimentId: string;
+    variantId: string;
+  }>;
+  url?: string;
+  timestamp: number;
+  createdAt: string;
+}
+
+export interface EventCountsExperiment {
+  experimentId: string;
+  events: Array<{
+    eventType: string;
+    eventCount: number;
+  }>;
+  totalEvents: number;
+}
+
+export interface EventCountsResponse {
+  projectId: string;
+  experiments: EventCountsExperiment[];
+}
+
+export interface EventsCountResponse {
+  count: number;
+}
+
 // API Error handling
 class AnalyticsApiError extends Error {
   constructor(
@@ -460,6 +494,73 @@ export const analyticsApi = {
   },
 
   /**
+   * Get raw event counts for all experiments or a specific one
+   */
+  async getEventCounts(
+    experimentId?: string
+  ): Promise<EventCountsResponse> {
+    const params = new URLSearchParams();
+    if (experimentId) {
+      params.append('experimentId', experimentId);
+    }
+
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/event-counts${queryString ? `?${queryString}` : ''}`;
+
+    return apiRequest<EventCountsResponse>(endpoint);
+  },
+
+  /**
+   * Get analytics events with filtering
+   */
+  async getEvents(
+    options?: {
+      experimentId?: string;
+      sessionId?: string;
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<AnalyticsEvent[]> {
+    const params = new URLSearchParams();
+    if (options?.experimentId) params.append('experimentId', options.experimentId);
+    if (options?.sessionId) params.append('sessionId', options.sessionId);
+    if (options?.startDate) params.append('startDate', options.startDate);
+    if (options?.endDate) params.append('endDate', options.endDate);
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.offset) params.append('offset', options.offset.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/events${queryString ? `?${queryString}` : ''}`;
+
+    return apiRequest<AnalyticsEvent[]>(endpoint);
+  },
+
+  /**
+   * Get count of events with filtering
+   */
+  async getEventsCount(
+    options?: {
+      experimentId?: string;
+      sessionId?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<EventsCountResponse> {
+    const params = new URLSearchParams();
+    if (options?.experimentId) params.append('experimentId', options.experimentId);
+    if (options?.sessionId) params.append('sessionId', options.sessionId);
+    if (options?.startDate) params.append('startDate', options.startDate);
+    if (options?.endDate) params.append('endDate', options.endDate);
+
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/events/count${queryString ? `?${queryString}` : ''}`;
+
+    return apiRequest<EventsCountResponse>(endpoint);
+  },
+
+  /**
    * Create a new experiment manually
    */
   async createExperiment(experimentData: {
@@ -497,7 +598,6 @@ export const analyticsApi = {
    * Reset all analytics events for an experiment
    */
   async resetExperimentEvents(
-    projectId: string,
     experimentId: string
   ): Promise<{ success: boolean; deletedCount: number; message: string }> {
     const endpoint = `/api/analytics/experiments/${experimentId}/reset`;
