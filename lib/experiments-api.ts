@@ -73,6 +73,7 @@ export interface CreateExperimentRequest {
     position: 'INNER' | 'OUTER' | 'BEFORE' | 'AFTER' | 'APPEND' | 'PREPEND';
   }>;
   trafficDistribution?: Record<string, number>;
+  skipControl?: boolean;
 }
 
 export interface StatusUpdateRequest {

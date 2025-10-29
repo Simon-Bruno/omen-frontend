@@ -63,6 +63,7 @@ const createExperimentSchema = z.object({
   variants: z.array(variantSchema).min(1, 'At least one variant is required'),
   goals: z.array(goalSchema).optional(),
   trafficDistribution: z.record(z.string(), z.number().min(0).max(1)).optional(),
+  skipControl: z.boolean().optional().default(false),
 });
 
 export async function GET(request: NextRequest) {

@@ -78,6 +78,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
   // Traffic distribution state
   const [useCustomTraffic, setUseCustomTraffic] = useState(false);
   const [trafficDistribution, setTrafficDistribution] = useState<Record<string, number>>({});
+  const [skipControl, setSkipControl] = useState(false);
 
   // Goals state
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -191,6 +192,16 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
 
       if (useCustomTraffic) {
         payload.trafficDistribution = trafficDistribution;
+      }
+
+      // Skip control allocation flag
+      if (skipControl) {
+        payload.skipControl = true;
+        // Optional UX guard: if custom traffic was provided, strip any accidental 'control' key
+        if (payload.trafficDistribution && 'control' in payload.trafficDistribution) {
+          const { control, ...rest } = payload.trafficDistribution as Record<string, number>;
+          payload.trafficDistribution = rest;
+        }
       }
 
       // Optional DOM targeting JSON block
@@ -324,6 +335,19 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                 min={1}
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <input
+              id="skip-control"
+              type="checkbox"
+              checked={skipControl}
+              onChange={(e) => setSkipControl(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="skip-control" className="text-sm text-gray-700 select-none">
+              Skip control allocation (allocate 100% across variants only)
+            </label>
           </div>
 
           <div>
