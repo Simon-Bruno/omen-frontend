@@ -326,12 +326,19 @@ export default function AnalyticsPage() {
             <div className="text-3xl font-bold text-slate-900 mb-2">
               {bestVariant.variantId}
           </div>
-          <div className="text-sm text-slate-500">
+            <div className="text-sm text-slate-500">
               {(() => {
                 const primaryGoal = bestVariant.goals.find(g => g.role === 'primary') || bestVariant.goals[0];
-                return ((primaryGoal?.conversionRate || 0) * 100).toFixed(2) + '% conversion';
+                if (!primaryGoal || !bestVariant.sessions || bestVariant.sessions === 0) return '0.00% conversion';
+                
+                // Calculate conversion rate from actual data: conversions / sessions * 100
+                const conversions = primaryGoal.conversions || 0;
+                const sessions = bestVariant.sessions || 0;
+                const rate = (conversions / sessions) * 100;
+                
+                return rate.toFixed(2) + '% conversion';
               })()}
-          </div>
+            </div>
           </Card>
         </div>
         
@@ -409,15 +416,32 @@ export default function AnalyticsPage() {
                   </thead>
                   <tbody>
                     {summaryData.variants[0].goals.map((goal) => {
-                      const controlId = summaryData.variants[0].variantId;
-                      const controlConv = summaryData.variants[0].goals.find(g => g.name === goal.name)?.conversions || 0;
-                      const bestVariant = summaryData.variants.slice(1).reduce((best, variant) => {
-                        const bestConv = best.goals.find(g => g.name === goal.name)?.conversions || 0;
-                        const currentConv = variant.goals.find(g => g.name === goal.name)?.conversions || 0;
-                        return currentConv > bestConv ? variant : best;
-                      }, summaryData.variants[0]);
-                      const bestConv = bestVariant.goals.find(g => g.name === goal.name)?.conversions || 0;
-                      const uplift = controlConv > 0 ? ((bestConv - controlConv) / controlConv) * 100 : (bestConv > 0 ? 100 : 0);
+                      // Find control variant (variantId === 'control') or assume first variant
+                      const controlVariant = summaryData.variants.find(v => v.variantId === 'control') || summaryData.variants[0];
+                      const controlConv = controlVariant.goals.find(g => g.name === goal.name)?.conversions || 0;
+                      
+                      // Find best variant (highest conversions) for this goal, excluding control
+                      const bestVariant = summaryData.variants
+                        .filter(v => v.variantId !== controlVariant.variantId)
+                        .reduce((best, variant) => {
+                          const bestConv = best.goals.find(g => g.name === goal.name)?.conversions || 0;
+                          const currentConv = variant.goals.find(g => g.name === goal.name)?.conversions || 0;
+                          return currentConv > bestConv ? variant : best;
+                        }, summaryData.variants.find(v => v.variantId !== controlVariant.variantId) || summaryData.variants[0]);
+                      
+                      const bestConv = bestVariant?.goals.find(g => g.name === goal.name)?.conversions || 0;
+                      
+                      // Calculate uplift: (best - control) / control * 100
+                      let uplift = 0;
+                      if (controlConv > 0 && bestConv > 0) {
+                        uplift = ((bestConv - controlConv) / controlConv) * 100;
+                      } else if (controlConv === 0 && bestConv > 0) {
+                        // If control has 0 but best has conversions, show as huge improvement
+                        uplift = Infinity; // Indicate infinite improvement
+                      } else if (bestConv < controlConv && controlConv > 0) {
+                        uplift = ((bestConv - controlConv) / controlConv) * 100; // Negative
+                      }
+                      
                       return (
                         <tr key={goal.name} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
                           <td className="py-3 pr-4 font-medium text-slate-900">{goal.name}</td>
@@ -428,15 +452,33 @@ export default function AnalyticsPage() {
                           </td>
                           {summaryData.variants.map((v) => {
                             const goalData = v.goals.find(g => g.name === goal.name);
+                            const isControl = v.variantId === controlVariant.variantId;
+                            const variantConv = goalData?.conversions || 0;
+                            
+                            // Calculate uplift for THIS variant vs control
+                            let variantUplift = 0;
+                            if (controlConv > 0 && variantConv > 0 && !isControl) {
+                              variantUplift = ((variantConv - controlConv) / controlConv) * 100;
+                            } else if (controlConv === 0 && variantConv > 0 && !isControl) {
+                              variantUplift = Infinity; // Huge improvement
+                            } else if (variantConv < controlConv && controlConv > 0 && !isControl) {
+                              variantUplift = ((variantConv - controlConv) / controlConv) * 100; // Negative
+                            }
+                            
                             return (
-                              <td key={v.variantId} className="py-3 pr-4 text-center font-medium text-slate-900">
-                                {goalData?.conversions || 0}
+                              <td key={v.variantId} className="py-3 pr-4 text-center">
+                                <div className="font-medium text-slate-900">{variantConv}</div>
+                                {!isControl && variantUplift !== 0 && (
+                                  <div className={`text-xs mt-1 ${variantUplift > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                    {variantUplift === Infinity ? '∞' : variantUplift > 0 ? '+' : ''}{variantUplift === Infinity ? '' : variantUplift.toFixed(1)}%
+                                  </div>
+                                )}
                               </td>
                             );
                           })}
                           <td className="py-3 pr-4 text-right">
                             <span className={`font-semibold ${uplift >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                              {uplift >= 0 ? '+' : ''}{uplift.toFixed(1)}%
+                              {uplift === Infinity ? '∞' : uplift >= 0 ? '+' : ''}{uplift === Infinity ? '' : uplift.toFixed(1)}%
                             </span>
                           </td>
                         </tr>
