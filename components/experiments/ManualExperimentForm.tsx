@@ -692,23 +692,97 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                   </div>
                 </div>
 
+                {/* Shopify Event Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Shopify Web Pixel Event (optional)
+                  </label>
+                  <select
+                    value={(() => {
+                      const shopifyEvents = ['checkout_completed', 'product_added_to_cart', 'product_viewed', 'page_viewed'];
+                      return shopifyEvents.includes(goal.eventType || '') ? goal.eventType : '';
+                    })()}
+                    onChange={(e) => {
+                      const shopifyEvent = e.target.value;
+                      if (shopifyEvent) {
+                        const eventConfig: Record<string, { name: string; type: 'custom' | 'purchase'; role: 'primary' | 'mechanism' | 'guardrail' }> = {
+                          'checkout_completed': { name: 'Purchase Conversion', type: 'purchase', role: 'primary' },
+                          'product_added_to_cart': { name: 'Add to Cart', type: 'custom', role: 'mechanism' },
+                          'product_viewed': { name: 'Product Views', type: 'custom', role: 'guardrail' },
+                          'page_viewed': { name: 'Page Views', type: 'custom', role: 'guardrail' },
+                        };
+                        const config = eventConfig[shopifyEvent];
+                        if (config) {
+                          updateGoal(index, 'eventType', shopifyEvent);
+                          updateGoal(index, 'name', config.name);
+                          updateGoal(index, 'type', config.type);
+                          updateGoal(index, 'role', config.role);
+                          // Clear DOM tracking fields when using Shopify events
+                          updateGoal(index, 'selector', '');
+                          updateGoal(index, 'customJs', '');
+                          updateGoal(index, 'targetUrls', undefined);
+                          updateGoal(index, 'bodyClasses', undefined);
+                        }
+                      } else {
+                        // If clearing Shopify event, also clear eventType if it was a Shopify event
+                        const shopifyEvents = ['checkout_completed', 'product_added_to_cart', 'product_viewed', 'page_viewed'];
+                        if (shopifyEvents.includes(goal.eventType || '')) {
+                          updateGoal(index, 'eventType', '');
+                        }
+                      }
+                    }}
+                    disabled={!!goal.selector}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">-- Select Shopify Event --</option>
+                    <option value="checkout_completed">Checkout Completed (Purchase)</option>
+                    <option value="product_added_to_cart">Product Added to Cart</option>
+                    <option value="product_viewed">Product Viewed</option>
+                    <option value="page_viewed">Page Viewed</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Auto-configures goal for Shopify web pixel events. Disabled when DOM selector is used.
+                  </p>
+                </div>
+
                 {/* DOM-based tracking */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Element Selector (optional)
+                    Element Selector (optional - for DOM tracking)
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <Input
                       type="text"
                       value={goal.selector || ''}
-                      onChange={(e) => updateGoal(index, 'selector', e.target.value)}
+                      onChange={(e) => {
+                        updateGoal(index, 'selector', e.target.value);
+                        // Clear Shopify event if DOM selector is added
+                        const shopifyEvents = ['checkout_completed', 'product_added_to_cart', 'product_viewed', 'page_viewed'];
+                        if (e.target.value && shopifyEvents.includes(goal.eventType || '')) {
+                          updateGoal(index, 'eventType', 'click');
+                        }
+                      }}
                       placeholder="e.g., button.signup, #checkout-btn"
+                      disabled={(() => {
+                        const shopifyEvents = ['checkout_completed', 'product_added_to_cart', 'product_viewed', 'page_viewed'];
+                        return shopifyEvents.includes(goal.eventType || '');
+                      })()}
+                      className="disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                     <select
-                      value={goal.eventType || 'click'}
+                      value={(() => {
+                        const shopifyEvents = ['checkout_completed', 'product_added_to_cart', 'product_viewed', 'page_viewed'];
+                        if (shopifyEvents.includes(goal.eventType || '')) {
+                          return 'click'; // Default for disabled state
+                        }
+                        return goal.eventType || 'click';
+                      })()}
                       onChange={(e) => updateGoal(index, 'eventType', e.target.value)}
-                      disabled={!goal.selector}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={!goal.selector || (() => {
+                        const shopifyEvents = ['checkout_completed', 'product_added_to_cart', 'product_viewed', 'page_viewed'];
+                        return shopifyEvents.includes(goal.eventType || '');
+                      })()}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="click">Click</option>
                       <option value="submit">Submit</option>
@@ -718,7 +792,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                     </select>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Track when users interact with specific elements
+                    Track when users interact with specific elements. Disabled when Shopify event is selected.
                   </p>
                 </div>
 
