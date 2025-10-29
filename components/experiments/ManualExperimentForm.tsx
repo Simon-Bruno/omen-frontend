@@ -72,7 +72,7 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
 
   // Variants state
   const [variants, setVariants] = useState<Variant[]>([
-    { variantId: 'A', selector: 'body', html: '', css: '', js: '', position: 'INNER' },
+    { variantId: 'A', selector: 'head', html: '', css: '', js: '', position: 'PREPEND' },
   ]);
 
   // Traffic distribution state
@@ -123,11 +123,11 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
     const nextId = String.fromCharCode(65 + variants.length); // A, B, C, etc.
     setVariants([...variants, {
       variantId: nextId,
-      selector: 'body',
+      selector: 'head',
       html: '',
       css: '',
       js: '',
-      position: 'INNER',
+      position: 'PREPEND',
     }]);
   };
 
@@ -923,17 +923,21 @@ export function ManualExperimentForm({ onSuccess, onCancel }: ManualExperimentFo
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Value Selector (required for purchase)
+                        Value Selector {isShopifyEventGoal(goal) ? '(optional - auto-handled by Shopify pixel)' : '(required for purchase)'}
                       </label>
                       <Input
                         type="text"
                         value={goal.valueSelector || ''}
                         onChange={(e) => updateGoal(index, 'valueSelector', e.target.value)}
                         placeholder="e.g., .total-price, #order-total"
-                        required
+                        required={!isShopifyEventGoal(goal)}
+                        disabled={isShopifyEventGoal(goal)}
+                        className={isShopifyEventGoal(goal) ? "disabled:bg-gray-100 disabled:cursor-not-allowed" : ""}
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        CSS selector to extract purchase value from DOM
+                        {isShopifyEventGoal(goal) 
+                          ? "Shopify web pixel automatically provides purchase value data"
+                          : "CSS selector to extract purchase value from DOM"}
                       </p>
                     </div>
 
