@@ -15,15 +15,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FunnelChart } from '@/components/analytics/FunnelChart';
-import { ConversionTable } from '@/components/analytics/ConversionTable';
-import { PurchaseStats } from '@/components/analytics/PurchaseStats';
-import { ExposureStats } from '@/components/analytics/ExposureStats';
+// Components commented out - need updating for new ExperimentSummary format
+// import { FunnelChart } from '@/components/analytics/FunnelChart';
+// import { ConversionTable } from '@/components/analytics/ConversionTable';
+// import { PurchaseStats } from '@/components/analytics/PurchaseStats';
+// import { ExposureStats } from '@/components/analytics/ExposureStats';
 import { UserJourney } from '@/components/analytics/UserJourney';
 import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
-import { analyticsApi, checkAuthStatus, NewFunnelAnalysis, ConversionRate, PurchaseStats as PurchaseStatsType, ExposureStats as ExposureStatsType, UserJourneyEvent, SessionListItem, SessionDetails, GoalsBreakdownResponse } from '@/lib/analytics-api';
-import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, Trash2, Settings, ChevronDown, Database, DollarSign } from 'lucide-react';
+import { RawEventsTable } from '@/components/analytics/RawEventsTable';
+import { analyticsApi, checkAuthStatus, ExperimentSummary, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
+import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, Trash2, Settings, ChevronDown, Database, DollarSign, FileText } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { isAuthenticated, isLoading, user, project } = useAuth();
@@ -31,7 +33,7 @@ export default function AnalyticsPage() {
   const router = useRouter();
   
   // State management
-  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'purchases' | 'traffic' | 'journey'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'purchases' | 'traffic' | 'journey' | 'events'>('overview');
   const [error, setError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false); // Toggle for mock vs real data
   const [isResetting, setIsResetting] = useState(false);
@@ -41,14 +43,11 @@ export default function AnalyticsPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   
-  // Data state
-  const [funnelData, setFunnelData] = useState<NewFunnelAnalysis | null>(null);
-  const [conversionData, setConversionData] = useState<ConversionRate[]>([]);
-  const [purchaseData, setPurchaseData] = useState<PurchaseStatsType[]>([]);
-  const [exposureData, setExposureData] = useState<ExposureStatsType[]>([]);
+  // Data state - simplified to use single summary
+  const [summaryData, setSummaryData] = useState<ExperimentSummary | null>(null);
   const [journeyData, setJourneyData] = useState<UserJourneyEvent[]>([]);
-  const [goalsBreakdown, setGoalsBreakdown] = useState<GoalsBreakdownResponse | null>(null);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
+  const [totalSessionCount, setTotalSessionCount] = useState<number>(0);
   
   // Sliding underline indicator state for tabs
   const tabsContainerRef = React.useRef<HTMLDivElement | null>(null);
@@ -65,190 +64,27 @@ export default function AnalyticsPage() {
     setIndicator({ left: activeRect.left - containerRect.left, width: activeRect.width });
   };
   
-  // Mock data for demonstration (replace with real API calls)
-
-  const mockFunnelData: NewFunnelAnalysis = {
-    experimentId: 'exp-123',
-    variants: [
-      {
-        variantId: 'A',
-        steps: [
-          {
-            step: 'Session',
-            eventType: 'PAGEVIEW',
-            count: 50,
-            percentage: 100,
-            dropoffRate: 0,
-          },
-          {
-            step: 'Exposure',
-            eventType: 'EXPOSURE',
-            count: 45,
-            percentage: 90,
-            dropoffRate: 10,
-          },
-          {
-            step: 'Conversion',
-            eventType: 'CONVERSION',
-            count: 3,
-            percentage: 6,
-            dropoffRate: 93.3,
-          },
-        ],
-        totalSessions: 50,
-        conversionRate: 6.7,
-      },
-      {
-        variantId: 'B',
-        steps: [
-          {
-            step: 'Session',
-            eventType: 'PAGEVIEW',
-            count: 48,
-            percentage: 100,
-            dropoffRate: 0,
-          },
-          {
-            step: 'Exposure',
-            eventType: 'EXPOSURE',
-            count: 44,
-            percentage: 91.7,
-            dropoffRate: 8.3,
-          },
-          {
-            step: 'Conversion',
-            eventType: 'CONVERSION',
-            count: 4,
-            percentage: 8.3,
-            dropoffRate: 90.9,
-          },
-        ],
-        totalSessions: 48,
-        conversionRate: 8.3,
-      },
-    ],
-    overallStats: {
-      totalSessions: 98,
-      totalExposures: 89,
-      totalConversions: 7,
-      overallConversionRate: 7.5,
-    },
-  };
-
-  const mockConversionData: ConversionRate[] = [
-    {
-      experimentId: 'exp-123',
-      variantId: 'control',
-      sessions: 5000,
-      conversions: 500,
-      conversionRate: 10.0, // 10% as percentage (matching funnel data format)
-      averageValue: 0,
-      totalValue: 0,
-    },
-    {
-      experimentId: 'exp-123',
-      variantId: 'variant-1',
-      sessions: 5000,
-      conversions: 700,
-      conversionRate: 14.0, // 14% as percentage (matching funnel data format)
-      averageValue: 0,
-      totalValue: 0,
-    },
-  ];
-
-  const mockExposureData: ExposureStatsType[] = [
-    {
-      experimentId: 'exp-123',
-      variantId: 'control',
-      exposures: 5000,
-      uniqueSessions: 4500,
-    },
-    {
-      experimentId: 'exp-123',
-      variantId: 'variant-1',
-      exposures: 5000,
-      uniqueSessions: 4800,
-    },
-  ];
-
-  const mockPurchaseData: PurchaseStatsType[] = [
-    {
-      experimentId: 'exp-123',
-      variantId: 'control',
-      sessions: 4500,
-      purchases: 450,
-      purchaseRate: 0.10, // 10%
-      totalRevenue: 22500, // $225 average order value
-      averageOrderValue: 50,
-      revenuePerSession: 5,
-    },
-    {
-      experimentId: 'exp-123',
-      variantId: 'variant-1',
-      sessions: 4800,
-      purchases: 720,
-      purchaseRate: 0.15, // 15%
-      totalRevenue: 43200, // $60 average order value
-      averageOrderValue: 60,
-      revenuePerSession: 9,
-    },
-  ];
-
-  const mockJourneyData: UserJourneyEvent[] = [
-    {
-      id: 'evt-1',
-      projectId: 'proj-123',
-      experimentId: 'exp-123',
-      eventType: 'EXPOSURE',
-      sessionId: 'session-abc123',
-      viewId: 'view-1',
-      properties: { variantId: 'control' },
-      timestamp: Date.now() - 3600000,
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: 'evt-2',
-      projectId: 'proj-123',
-      experimentId: 'exp-123',
-      eventType: 'PAGEVIEW',
-      sessionId: 'session-abc123',
-      viewId: 'view-2',
-      properties: { page: '/checkout' },
-      timestamp: Date.now() - 3500000,
-      createdAt: new Date(Date.now() - 3500000).toISOString(),
-    },
-    {
-      id: 'evt-3',
-      projectId: 'proj-123',
-      experimentId: 'exp-123',
-      eventType: 'CONVERSION',
-      sessionId: 'session-abc123',
-      viewId: 'view-3',
-      properties: { goal: 'conversion' },
-      timestamp: Date.now() - 3400000,
-      createdAt: new Date(Date.now() - 3400000).toISOString(),
-    },
-  ];
+  // TODO: Components (FunnelChart, ConversionTable, PurchaseStats, ExposureStats) need updating to use ExperimentSummary format
 
   // Load sessions when experiment changes
   useEffect(() => {
-    if (selectedExperimentId && project?.id) {
+    if (selectedExperimentId) {
       loadSessions();
     } else {
       setSessions([]);
       setSelectedSessionId(null);
     }
-  }, [selectedExperimentId, project?.id]);
+  }, [selectedExperimentId]);
 
   // Load session details when session is selected
   useEffect(() => {
-    if (selectedSessionId && project?.id) {
+    if (selectedSessionId) {
       loadSessionDetails();
     } else {
       setSessionDetails(null);
       setJourneyData([]);
     }
-  }, [selectedSessionId, project?.id]);
+  }, [selectedSessionId]);
 
   // Load data based on toggle state and selections
   useEffect(() => {
@@ -260,10 +96,10 @@ export default function AnalyticsPage() {
 
   // Function to load detailed session information
   const loadSessionDetails = async () => {
-    if (!selectedSessionId || !project?.id) return;
+    if (!selectedSessionId) return;
     
     try {
-      const details = await analyticsApi.getSessionDetails(project.id, selectedSessionId);
+      const details = await analyticsApi.getSessionDetails(selectedSessionId);
       setSessionDetails(details);
       setJourneyData(details.journey);
     } catch (err) {
@@ -275,16 +111,19 @@ export default function AnalyticsPage() {
 
   // Function to load sessions for selected experiment
   const loadSessions = async () => {
-    if (!selectedExperimentId || !project?.id) return;
-    
+    if (!selectedExperimentId) return;
+
     try {
-      const data = await analyticsApi.getExperimentSessions(project.id, selectedExperimentId, 100, 0);
-      
+      const data = await analyticsApi.getExperimentSessions(selectedExperimentId, 100, 0);
+
+      // Store the total session count - this is the REAL count from the backend
+      setTotalSessionCount(data.total);
+
       // Sort sessions by event count (descending) to show most active sessions first
       // This helps users find sessions with more interesting activity
       const sortedSessions = data.sessions.sort((a, b) => b.eventCount - a.eventCount);
       setSessions(sortedSessions);
-      
+
       // Auto-select first session if none selected
       if (!selectedSessionId && sortedSessions.length > 0) {
         setSelectedSessionId(sortedSessions[0].sessionId);
@@ -292,83 +131,51 @@ export default function AnalyticsPage() {
     } catch (err) {
       console.error('Failed to load sessions:', err);
       setSessions([]);
+      setTotalSessionCount(0);
     }
   };
 
-  // Function to load data (mock or real)
+  // Function to load data - simplified to use single summary endpoint
   const loadData = async () => {
     if (useMockData) {
-      // Load mock data
-      setFunnelData(mockFunnelData);
-      setConversionData(mockConversionData);
-      setPurchaseData(mockPurchaseData);
-      setExposureData(mockExposureData);
-      setJourneyData(mockJourneyData);
-      setError(null);
-    } else {
-      // Load real data from API
-      setLoading(true);
-      setError(null);
+      // Mock data removed - components need to be updated to use summary format
+      setError('Mock data not supported with new API format');
+      setLoading(false);
+      return;
+    }
+
+    // Load real data from API
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const experimentId = selectedExperimentId;
       
-      try {
-        // Use actual project/experiment IDs from user context
-        const projectId = project?.id;
-        const experimentId = selectedExperimentId;
-        const sessionId = selectedSessionId;
-        
-        if (!projectId || !experimentId) {
-          // Fallback to mock data if no project ID or experiment ID is available
-          setFunnelData(mockFunnelData);
-          setConversionData(mockConversionData);
-          setExposureData(mockExposureData);
-          setJourneyData(mockJourneyData);
-          setError('No project ID or experiment selected. Showing mock data instead.');
-          setLoading(false);
-          return;
-        }
-        
-        // Load all data in parallel
-        const [funnel, conversions, purchases, exposures, goals] = await Promise.all([
-          analyticsApi.getFunnelAnalysis(projectId, experimentId),
-          analyticsApi.getConversionRates(projectId, experimentId),
-          analyticsApi.getPurchaseStats(projectId, experimentId),
-          analyticsApi.getExposureStats(projectId, experimentId),
-          analyticsApi.getGoalsBreakdown(projectId, experimentId),
-        ]);
-        
-        // Load journey data separately if we have a session selected
-        let journey: UserJourneyEvent[] = [];
-        if (sessionId) {
-          journey = await analyticsApi.getUserJourney(projectId, sessionId);
-        }
-        
-        
-        setFunnelData(funnel);
-        setConversionData(conversions);
-        setPurchaseData(purchases);
-        setExposureData(exposures);
-        setJourneyData(journey);
-        setGoalsBreakdown(goals);
-      } catch (err) {
-        console.error('Failed to load analytics data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load analytics data');
-        
-        // Fallback to mock data on error
-        setFunnelData(mockFunnelData);
-        setConversionData(mockConversionData);
-        setExposureData(mockExposureData);
-        setJourneyData(mockJourneyData);
-        setGoalsBreakdown(null);
-      } finally {
+      if (!experimentId) {
+        setError('No experiment selected');
         setLoading(false);
+        return;
       }
+      
+      // Single API call - everything in one request!
+      const summary = await analyticsApi.getExperimentSummary(experimentId);
+      
+      setSummaryData(summary);
+      setTotalSessionCount(summary.totalSessions);
+      
+    } catch (err) {
+      console.error('Failed to load analytics data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load analytics data');
+      setSummaryData(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Handle reset analytics data
   const handleResetAnalytics = async () => {
-    if (!project?.id || !selectedExperimentId) {
-      setError('No project or experiment selected');
+    if (!selectedExperimentId) {
+      setError('No experiment selected');
       return;
     }
 
@@ -434,6 +241,7 @@ export default function AnalyticsPage() {
     { id: 'purchases', label: 'Purchase Analytics', icon: DollarSign },
     { id: 'traffic', label: 'Traffic Overview', icon: Users },
     { id: 'journey', label: 'User Journey', icon: Calendar },
+    { id: 'events', label: 'Raw Events', icon: Database },
   ];
 
   const renderOverview = () => (
@@ -445,10 +253,10 @@ export default function AnalyticsPage() {
              <h3 className="text-sm font-semibold text-slate-700">Total Sessions</h3>
            </div>
           <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {funnelData?.overallStats.totalSessions.toLocaleString() || '0'}
+            {summaryData?.totalSessions.toLocaleString() || totalSessionCount.toLocaleString() || '0'}
           </div>
           <div className="flex items-center gap-1 text-sm text-slate-500">
-            <span>{funnelData?.overallStats.totalExposures.toLocaleString() || '0'}</span>
+            <span>{summaryData?.variants.reduce((sum, v) => sum + v.exposures, 0).toLocaleString() || '0'}</span>
             <span>exposures</span>
           </div>
         </div>
@@ -458,10 +266,12 @@ export default function AnalyticsPage() {
              <h3 className="text-sm font-semibold text-slate-700">Conversion Rate</h3>
            </div>
           <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {funnelData?.overallStats.overallConversionRate.toFixed(2) || '0.00'}%
+            {summaryData && summaryData.variants.length > 0 && summaryData.variants[0].goals.length > 0
+              ? (summaryData.variants[0].goals[0].conversionRate * 100).toFixed(2) 
+              : '0.00'}%
           </div>
           <div className="flex items-center gap-1 text-sm text-slate-500">
-            <span>{funnelData?.overallStats.totalConversions.toLocaleString() || '0'}</span>
+            <span>{summaryData?.variants.reduce((sum, v) => sum + v.goals.reduce((gSum, g) => gSum + g.conversions, 0), 0).toLocaleString() || '0'}</span>
             <span>conversions</span>
           </div>
         </div>
@@ -471,10 +281,10 @@ export default function AnalyticsPage() {
              <h3 className="text-sm font-semibold text-slate-700">Active Variants</h3>
            </div>
           <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {funnelData?.variants.length || 0}
+            {summaryData?.variants.length || 0}
           </div>
           <div className="text-sm text-slate-500">
-            {funnelData?.variants.map(v => v.variantId).join(', ') || 'None'}
+            {summaryData?.variants.map((v) => v.variantId).join(', ') || 'None'}
           </div>
         </div>
         
@@ -483,17 +293,21 @@ export default function AnalyticsPage() {
              <h3 className="text-sm font-semibold text-slate-700">Best Performer</h3>
            </div>
           <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {funnelData?.variants && funnelData.variants.length > 0 
-              ? funnelData.variants.reduce((best, current) => 
-                  current.conversionRate > best.conversionRate ? current : best
-                ).variantId 
+            {summaryData?.variants && summaryData.variants.length > 0 
+              ? summaryData.variants.reduce((best, current) => {
+                  const bestRate = (best.goals[0]?.conversionRate || 0) * 100;
+                  const currentRate = (current.goals[0]?.conversionRate || 0) * 100;
+                  return currentRate > bestRate ? current : best;
+                }).variantId 
               : 'N/A'}
           </div>
           <div className="text-sm text-slate-500">
-            {funnelData?.variants && funnelData.variants.length > 0 
-              ? funnelData.variants.reduce((best, current) => 
-                  current.conversionRate > best.conversionRate ? current : best
-                ).conversionRate.toFixed(2) + '% conversion'
+            {summaryData?.variants && summaryData.variants.length > 0 
+              ? ((summaryData.variants.reduce((best, current) => {
+                  const bestRate = (best.goals[0]?.conversionRate || 0) * 100;
+                  const currentRate = (current.goals[0]?.conversionRate || 0) * 100;
+                  return currentRate > bestRate ? current : best;
+                }).goals[0]?.conversionRate || 0) * 100).toFixed(2) + '% conversion'
               : '0.00% conversion'}
           </div>
         </div>
@@ -519,7 +333,7 @@ export default function AnalyticsPage() {
       case 'overview':
         return (
           <div className="space-y-6">
-            {loading && !funnelData?.overallStats ? (
+            {loading && !summaryData ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="bg-white rounded-lg border border-slate-200 p-6 animate-pulse">
@@ -532,54 +346,61 @@ export default function AnalyticsPage() {
             ) : (
               renderOverview()
             )}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {funnelData && <FunnelChart data={funnelData} />}
-              {conversionData.length > 0 && <ConversionTable data={conversionData} />}
-            </div>
           </div>
         );
       case 'experiments':
         return <ExperimentList />;
       case 'funnel':
-        return funnelData ? <FunnelChart data={funnelData} /> : <div>No funnel data available</div>;
+        return <div className="text-center py-16 text-slate-500">Funnel analysis - component needs updating for new API format</div>;
       case 'conversions':
         return (
           <div className="space-y-6">
-            {conversionData.length > 0 ? <ConversionTable data={conversionData} /> : <div>No conversion data available</div>}
-            {/* Goals table */}
-            {goalsBreakdown && goalsBreakdown.goals.length > 0 && (
+            {/* Goals breakdown from summary */}
+            {summaryData && summaryData.variants.length > 0 && summaryData.variants[0].goals.length > 0 ? (
               <div className="bg-white rounded-lg border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Goals</h3>
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Goals Breakdown</h3>
+                {/* Debug info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs text-gray-500 mb-2">
+                    <details>
+                      <summary className="cursor-pointer text-blue-600 hover:text-blue-700">Debug: Raw Goals Data</summary>
+                      <pre className="mt-1 p-2 bg-gray-50 rounded overflow-x-auto">
+                        {JSON.stringify(summaryData, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
                       <tr className="text-left text-slate-600 border-b">
                         <th className="py-2 pr-4">Goal</th>
                         <th className="py-2 pr-4">Type</th>
-                        {goalsBreakdown.variants.map(v => (
-                          <th key={v} className="py-2 pr-4">{v} Conv.</th>
+                        {summaryData.variants.map((v) => (
+                          <th key={v.variantId} className="py-2 pr-4">{v.variantId} Conv.</th>
                         ))}
                         <th className="py-2 pr-4">Uplift vs Control</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {goalsBreakdown.goals.map(goal => {
-                        const controlId = goalsBreakdown.variants[0];
-                        const per = Object.fromEntries(goal.perVariant.map(p => [p.variantId, p.conversions]));
-                        const controlConv = per[controlId] || 0;
-                        const bestVariant = goalsBreakdown.variants.slice(1).reduce((best, vid) => {
-                          const conv = per[vid] || 0;
-                          return conv > (per[best] || 0) ? vid : best;
-                        }, goalsBreakdown.variants[1] || controlId);
-                        const bestConv = per[bestVariant] || 0;
+                      {summaryData.variants[0].goals.map((goal) => {
+                        const controlId = summaryData.variants[0].variantId;
+                        const controlConv = summaryData.variants[0].goals.find(g => g.name === goal.name)?.conversions || 0;
+                        const bestVariant = summaryData.variants.slice(1).reduce((best, variant) => {
+                          const bestConv = best.goals.find(g => g.name === goal.name)?.conversions || 0;
+                          const currentConv = variant.goals.find(g => g.name === goal.name)?.conversions || 0;
+                          return currentConv > bestConv ? variant : best;
+                        }, summaryData.variants[0]);
+                        const bestConv = bestVariant.goals.find(g => g.name === goal.name)?.conversions || 0;
                         const uplift = controlConv > 0 ? ((bestConv - controlConv) / controlConv) * 100 : (bestConv > 0 ? 100 : 0);
                         return (
                           <tr key={goal.name} className="border-b last:border-0">
                             <td className="py-2 pr-4 font-medium text-slate-800">{goal.name}</td>
                             <td className="py-2 pr-4 text-slate-600">{goal.type}</td>
-                            {goalsBreakdown.variants.map(v => (
-                              <td key={v} className="py-2 pr-4">{per[v] || 0}</td>
-                            ))}
+                            {summaryData.variants.map((v) => {
+                              const goalData = v.goals.find(g => g.name === goal.name);
+                              return <td key={v.variantId} className="py-2 pr-4">{goalData?.conversions || 0}</td>;
+                            })}
                             <td className="py-2 pr-4">
                               <span className={`${uplift >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{uplift.toFixed(1)}%</span>
                             </td>
@@ -590,13 +411,71 @@ export default function AnalyticsPage() {
                   </table>
                 </div>
               </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Goals Breakdown</h3>
+                <p className="text-slate-500 text-sm">No goals data available. This could mean:</p>
+                <ul className="mt-2 text-sm text-slate-500 list-disc ml-5">
+                  <li>No goals are configured for this experiment</li>
+                  <li>Goal names in the database don't match event goal names</li>
+                  <li>Events are using different variant keys than expected (check Raw Events tab)</li>
+                </ul>
+              </div>
             )}
           </div>
         );
       case 'purchases':
-        return purchaseData.length > 0 ? <PurchaseStats data={purchaseData} /> : <div>No purchase data available</div>;
+        return summaryData ? (
+          <div className="space-y-4">
+            {summaryData.variants.map((variant) => (
+              <Card key={variant.variantId} className="p-4">
+                <CardTitle className="text-lg mb-2">{variant.variantId}</CardTitle>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <div className="text-slate-500">Revenue</div>
+                    <div className="font-semibold">${variant.revenue.totalRevenue.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500">Purchases</div>
+                    <div className="font-semibold">{variant.revenue.purchases}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500">Purchase Rate</div>
+                    <div className="font-semibold">{(variant.revenue.purchaseRate * 100).toFixed(2)}%</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500">Avg Order Value</div>
+                    <div className="font-semibold">${variant.revenue.avgOrderValue.toFixed(2)}</div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : <div>No purchase data available</div>;
       case 'traffic':
-        return exposureData.length > 0 ? <ExposureStats data={exposureData} /> : <div>No traffic data available</div>;
+        return summaryData ? (
+          <div className="space-y-4">
+            {summaryData.variants.map((variant) => (
+              <Card key={variant.variantId} className="p-4">
+                <CardTitle className="text-lg mb-2">{variant.variantId}</CardTitle>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <div className="text-slate-500">Sessions</div>
+                    <div className="font-semibold">{variant.sessions.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500">Exposures</div>
+                    <div className="font-semibold">{variant.exposures.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500">Pageviews</div>
+                    <div className="font-semibold">{variant.pageviews.toLocaleString()}</div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : <div>No traffic data available</div>;
       case 'journey':
         if (!selectedExperimentId) {
           return (
@@ -609,13 +488,15 @@ export default function AnalyticsPage() {
             </div>
           );
         }
-        return <UserJourney 
-          data={journeyData} 
+        return <UserJourney
+          data={journeyData}
           sessions={sessions}
           selectedSessionId={selectedSessionId}
           sessionDetails={sessionDetails}
           onSessionSelect={(sessionId) => setSelectedSessionId(sessionId)}
         />;
+      case 'events':
+        return <RawEventsTable experimentId={selectedExperimentId || undefined} sessionId={selectedSessionId || undefined} />;
       default:
         return null;
     }
