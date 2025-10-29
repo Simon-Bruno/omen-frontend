@@ -37,6 +37,7 @@ export interface VariantSummary {
 export interface GoalMetric {
   name: string;
   type: string;
+  role?: 'primary' | 'mechanism' | 'guardrail';
   conversions: number;
   conversionRate: number;
   totalValue: number;

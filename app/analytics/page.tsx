@@ -24,6 +24,7 @@ import { UserJourney } from '@/components/analytics/UserJourney';
 import { ExperimentSelector } from '@/components/analytics/ExperimentSelector';
 import { ExperimentList } from '@/components/experiments/ExperimentList';
 import { RawEventsTable } from '@/components/analytics/RawEventsTable';
+import { TrafficSplitChart } from '@/components/analytics/TrafficSplitChart';
 import { analyticsApi, checkAuthStatus, ExperimentSummary, UserJourneyEvent, SessionListItem, SessionDetails } from '@/lib/analytics-api';
 import { Calendar, RefreshCw, TrendingUp, Users, Target, BarChart3, Plus, Trash2, Settings, ChevronDown, Database, DollarSign, FileText } from 'lucide-react';
 
@@ -33,7 +34,7 @@ export default function AnalyticsPage() {
   const router = useRouter();
   
   // State management
-  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'funnel' | 'conversions' | 'purchases' | 'traffic' | 'journey' | 'events'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'experiments' | 'journey' | 'events'>('overview');
   const [error, setError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false); // Toggle for mock vs real data
   const [isResetting, setIsResetting] = useState(false);
@@ -112,18 +113,18 @@ export default function AnalyticsPage() {
   // Function to load sessions for selected experiment
   const loadSessions = async () => {
     if (!selectedExperimentId) return;
-
+    
     try {
       const data = await analyticsApi.getExperimentSessions(selectedExperimentId, 100, 0);
 
       // Store the total session count - this is the REAL count from the backend
       setTotalSessionCount(data.total);
-
+      
       // Sort sessions by event count (descending) to show most active sessions first
       // This helps users find sessions with more interesting activity
       const sortedSessions = data.sessions.sort((a, b) => b.eventCount - a.eventCount);
       setSessions(sortedSessions);
-
+      
       // Auto-select first session if none selected
       if (!selectedSessionId && sortedSessions.length > 0) {
         setSelectedSessionId(sortedSessions[0].sessionId);
@@ -144,31 +145,31 @@ export default function AnalyticsPage() {
       return;
     }
 
-    // Load real data from API
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const experimentId = selectedExperimentId;
+      // Load real data from API
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const experimentId = selectedExperimentId;
       
       if (!experimentId) {
         setError('No experiment selected');
-        setLoading(false);
-        return;
-      }
-      
+          setLoading(false);
+          return;
+        }
+        
       // Single API call - everything in one request!
       const summary = await analyticsApi.getExperimentSummary(experimentId);
       
       setSummaryData(summary);
       setTotalSessionCount(summary.totalSessions);
       
-    } catch (err) {
-      console.error('Failed to load analytics data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load analytics data');
+      } catch (err) {
+        console.error('Failed to load analytics data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load analytics data');
       setSummaryData(null);
-    } finally {
-      setLoading(false);
+      } finally {
+        setLoading(false);
     }
   };
 
@@ -236,84 +237,220 @@ export default function AnalyticsPage() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'experiments', label: 'Experiments', icon: Target },
-    { id: 'funnel', label: 'Funnel Analysis', icon: TrendingUp },
-    { id: 'conversions', label: 'A/B Test Results', icon: Target },
-    { id: 'purchases', label: 'Purchase Analytics', icon: DollarSign },
-    { id: 'traffic', label: 'Traffic Overview', icon: Users },
     { id: 'journey', label: 'User Journey', icon: Calendar },
     { id: 'events', label: 'Raw Events', icon: Database },
   ];
 
-  const renderOverview = () => (
+  // Calculate overall conversion rate correctly
+  const calculateOverallConversionRate = () => {
+    if (!summaryData || summaryData.totalSessions === 0) return 0;
+    
+    // Get primary goal conversions across all variants
+    const totalConversions = summaryData.variants.reduce((sum, v) => {
+      const primaryGoal = v.goals.find(g => g.role === 'primary') || v.goals[0];
+      return sum + (primaryGoal?.conversions || 0);
+    }, 0);
+    
+    return (totalConversions / summaryData.totalSessions) * 100;
+  };
+
+  const renderOverview = () => {
+    if (!summaryData) return null;
+
+    const overallConversionRate = calculateOverallConversionRate();
+    const totalConversions = summaryData.variants.reduce((sum, v) => {
+      const primaryGoal = v.goals.find(g => g.role === 'primary') || v.goals[0];
+      return sum + (primaryGoal?.conversions || 0);
+    }, 0);
+    
+    const bestVariant = summaryData.variants.reduce((best, current) => {
+      const bestPrimaryGoal = best.goals.find(g => g.role === 'primary') || best.goals[0];
+      const currentPrimaryGoal = current.goals.find(g => g.role === 'primary') || current.goals[0];
+      const bestRate = bestPrimaryGoal?.conversionRate || 0;
+      const currentRate = currentPrimaryGoal?.conversionRate || 0;
+      return currentRate > bestRate ? current : best;
+    });
+
+    const primaryGoalName = summaryData.variants[0]?.goals.find(g => g.role === 'primary')?.name || 
+                             summaryData.variants[0]?.goals[0]?.name || 'conversions';
+
+    return (
     <div className="space-y-6">
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-         <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <Card className="p-6 border-slate-200 hover:border-slate-300 transition-colors">
            <div className="mb-2">
-             <h3 className="text-sm font-semibold text-slate-700">Total Sessions</h3>
+              <h3 className="text-sm font-semibold text-slate-700 mb-1">Total Sessions</h3>
            </div>
-          <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {summaryData?.totalSessions.toLocaleString() || totalSessionCount.toLocaleString() || '0'}
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {summaryData.totalSessions.toLocaleString()}
           </div>
           <div className="flex items-center gap-1 text-sm text-slate-500">
-            <span>{summaryData?.variants.reduce((sum, v) => sum + v.exposures, 0).toLocaleString() || '0'}</span>
+              <span>{summaryData.variants.reduce((sum, v) => sum + v.exposures, 0).toLocaleString()}</span>
             <span>exposures</span>
           </div>
-        </div>
+          </Card>
         
-         <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <Card className="p-6 border-slate-200 hover:border-slate-300 transition-colors">
            <div className="mb-2">
-             <h3 className="text-sm font-semibold text-slate-700">Conversion Rate</h3>
+              <h3 className="text-sm font-semibold text-slate-700 mb-1">Conversion Rate</h3>
            </div>
-          <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {summaryData && summaryData.variants.length > 0 && summaryData.variants[0].goals.length > 0
-              ? (summaryData.variants[0].goals[0].conversionRate * 100).toFixed(2) 
-              : '0.00'}%
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {overallConversionRate.toFixed(2)}%
           </div>
           <div className="flex items-center gap-1 text-sm text-slate-500">
-            <span>{summaryData?.variants.reduce((sum, v) => sum + v.goals.reduce((gSum, g) => gSum + g.conversions, 0), 0).toLocaleString() || '0'}</span>
+              <span>{totalConversions.toLocaleString()}</span>
             <span>conversions</span>
+              {primaryGoalName && primaryGoalName !== 'conversions' && (
+                <span className="text-xs text-slate-400 ml-1">({primaryGoalName})</span>
+              )}
+            </div>
+          </Card>
+          
+          <Card className="p-6 border-slate-200 hover:border-slate-300 transition-colors">
+            <div className="mb-2">
+              <h3 className="text-sm font-semibold text-slate-700 mb-1">Active Variants</h3>
+            </div>
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {summaryData.variants.length}
           </div>
+            <div className="text-sm text-slate-500">
+              {summaryData.variants.map((v) => v.variantId).join(', ')}
         </div>
+          </Card>
         
-         <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <Card className="p-6 border-slate-200 hover:border-slate-300 transition-colors">
            <div className="mb-2">
-             <h3 className="text-sm font-semibold text-slate-700">Active Variants</h3>
+              <h3 className="text-sm font-semibold text-slate-700 mb-1">Best Performer</h3>
            </div>
-          <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {summaryData?.variants.length || 0}
+            <div className="text-3xl font-bold text-slate-900 mb-2">
+              {bestVariant.variantId}
           </div>
           <div className="text-sm text-slate-500">
-            {summaryData?.variants.map((v) => v.variantId).join(', ') || 'None'}
+              {(() => {
+                const primaryGoal = bestVariant.goals.find(g => g.role === 'primary') || bestVariant.goals[0];
+                return ((primaryGoal?.conversionRate || 0) * 100).toFixed(2) + '% conversion';
+              })()}
           </div>
+          </Card>
         </div>
         
-         <div className="bg-white rounded-lg border border-slate-200 p-6">
-           <div className="mb-2">
-             <h3 className="text-sm font-semibold text-slate-700">Best Performer</h3>
-           </div>
-          <div className="text-3xl font-semibold text-slate-900 mb-1">
-            {summaryData?.variants && summaryData.variants.length > 0 
-              ? summaryData.variants.reduce((best, current) => {
-                  const bestRate = (best.goals[0]?.conversionRate || 0) * 100;
-                  const currentRate = (current.goals[0]?.conversionRate || 0) * 100;
-                  return currentRate > bestRate ? current : best;
-                }).variantId 
-              : 'N/A'}
+        {/* Charts and Tables Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Traffic Split Chart */}
+          <div className="lg:col-span-1">
+            {summaryData.variants.length > 0 && (
+              <TrafficSplitChart variants={summaryData.variants} />
+            )}
           </div>
-          <div className="text-sm text-slate-500">
-            {summaryData?.variants && summaryData.variants.length > 0 
-              ? ((summaryData.variants.reduce((best, current) => {
-                  const bestRate = (best.goals[0]?.conversionRate || 0) * 100;
-                  const currentRate = (current.goals[0]?.conversionRate || 0) * 100;
-                  return currentRate > bestRate ? current : best;
-                }).goals[0]?.conversionRate || 0) * 100).toFixed(2) + '% conversion'
-              : '0.00% conversion'}
+
+          {/* Purchase Analytics */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-slate-700">Purchase Analytics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {summaryData.variants.map((variant) => (
+                  <div key={variant.variantId} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-medium">
+                          {variant.variantId === 'control' ? 'Control' : variant.variantId}
+                        </Badge>
+                        <span className="text-xs text-slate-500">{(variant.sessionPercent).toFixed(1)}% of traffic</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1">Revenue</div>
+                        <div className="text-lg font-semibold text-slate-900">${variant.revenue.totalRevenue.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1">Purchases</div>
+                        <div className="text-lg font-semibold text-slate-900">{variant.revenue.purchases}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1">Purchase Rate</div>
+                        <div className="text-lg font-semibold text-slate-900">{(variant.revenue.purchaseRate * 100).toFixed(2)}%</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1">Avg Order Value</div>
+                        <div className="text-lg font-semibold text-slate-900">${variant.revenue.avgOrderValue.toFixed(2)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
           </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+
+        {/* Goals Breakdown Table */}
+        {summaryData.variants.length > 0 && summaryData.variants[0].goals.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-slate-700">Goals Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-600 border-b border-slate-200">
+                      <th className="py-3 pr-4 font-semibold">Goal</th>
+                      <th className="py-3 pr-4 font-semibold">Type</th>
+                      {summaryData.variants.map((v) => (
+                        <th key={v.variantId} className="py-3 pr-4 font-semibold text-center">
+                          {v.variantId === 'control' ? 'Control' : v.variantId} Conv.
+                        </th>
+                      ))}
+                      <th className="py-3 pr-4 font-semibold text-right">Uplift vs Control</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summaryData.variants[0].goals.map((goal) => {
+                      const controlId = summaryData.variants[0].variantId;
+                      const controlConv = summaryData.variants[0].goals.find(g => g.name === goal.name)?.conversions || 0;
+                      const bestVariant = summaryData.variants.slice(1).reduce((best, variant) => {
+                        const bestConv = best.goals.find(g => g.name === goal.name)?.conversions || 0;
+                        const currentConv = variant.goals.find(g => g.name === goal.name)?.conversions || 0;
+                        return currentConv > bestConv ? variant : best;
+                      }, summaryData.variants[0]);
+                      const bestConv = bestVariant.goals.find(g => g.name === goal.name)?.conversions || 0;
+                      const uplift = controlConv > 0 ? ((bestConv - controlConv) / controlConv) * 100 : (bestConv > 0 ? 100 : 0);
+                      return (
+                        <tr key={goal.name} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                          <td className="py-3 pr-4 font-medium text-slate-900">{goal.name}</td>
+                          <td className="py-3 pr-4 text-slate-600">
+                            <Badge variant="outline" className="text-xs">
+                              {goal.type}
+                            </Badge>
+                          </td>
+                          {summaryData.variants.map((v) => {
+                            const goalData = v.goals.find(g => g.name === goal.name);
+                            return (
+                              <td key={v.variantId} className="py-3 pr-4 text-center font-medium text-slate-900">
+                                {goalData?.conversions || 0}
+                              </td>
+                            );
+                          })}
+                          <td className="py-3 pr-4 text-right">
+                            <span className={`font-semibold ${uplift >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                              {uplift >= 0 ? '+' : ''}{uplift.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
     </div>
   );
+  };
 
   const renderContent = () => {
     // Show selection prompt if no experiment is selected
@@ -350,132 +487,6 @@ export default function AnalyticsPage() {
         );
       case 'experiments':
         return <ExperimentList />;
-      case 'funnel':
-        return <div className="text-center py-16 text-slate-500">Funnel analysis - component needs updating for new API format</div>;
-      case 'conversions':
-        return (
-          <div className="space-y-6">
-            {/* Goals breakdown from summary */}
-            {summaryData && summaryData.variants.length > 0 && summaryData.variants[0].goals.length > 0 ? (
-              <div className="bg-white rounded-lg border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Goals Breakdown</h3>
-                {/* Debug info */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="text-xs text-gray-500 mb-2">
-                    <details>
-                      <summary className="cursor-pointer text-blue-600 hover:text-blue-700">Debug: Raw Goals Data</summary>
-                      <pre className="mt-1 p-2 bg-gray-50 rounded overflow-x-auto">
-                        {JSON.stringify(summaryData, null, 2)}
-                      </pre>
-                    </details>
-                  </div>
-                )}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-slate-600 border-b">
-                        <th className="py-2 pr-4">Goal</th>
-                        <th className="py-2 pr-4">Type</th>
-                        {summaryData.variants.map((v) => (
-                          <th key={v.variantId} className="py-2 pr-4">{v.variantId} Conv.</th>
-                        ))}
-                        <th className="py-2 pr-4">Uplift vs Control</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {summaryData.variants[0].goals.map((goal) => {
-                        const controlId = summaryData.variants[0].variantId;
-                        const controlConv = summaryData.variants[0].goals.find(g => g.name === goal.name)?.conversions || 0;
-                        const bestVariant = summaryData.variants.slice(1).reduce((best, variant) => {
-                          const bestConv = best.goals.find(g => g.name === goal.name)?.conversions || 0;
-                          const currentConv = variant.goals.find(g => g.name === goal.name)?.conversions || 0;
-                          return currentConv > bestConv ? variant : best;
-                        }, summaryData.variants[0]);
-                        const bestConv = bestVariant.goals.find(g => g.name === goal.name)?.conversions || 0;
-                        const uplift = controlConv > 0 ? ((bestConv - controlConv) / controlConv) * 100 : (bestConv > 0 ? 100 : 0);
-                        return (
-                          <tr key={goal.name} className="border-b last:border-0">
-                            <td className="py-2 pr-4 font-medium text-slate-800">{goal.name}</td>
-                            <td className="py-2 pr-4 text-slate-600">{goal.type}</td>
-                            {summaryData.variants.map((v) => {
-                              const goalData = v.goals.find(g => g.name === goal.name);
-                              return <td key={v.variantId} className="py-2 pr-4">{goalData?.conversions || 0}</td>;
-                            })}
-                            <td className="py-2 pr-4">
-                              <span className={`${uplift >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{uplift.toFixed(1)}%</span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Goals Breakdown</h3>
-                <p className="text-slate-500 text-sm">No goals data available. This could mean:</p>
-                <ul className="mt-2 text-sm text-slate-500 list-disc ml-5">
-                  <li>No goals are configured for this experiment</li>
-                  <li>Goal names in the database don't match event goal names</li>
-                  <li>Events are using different variant keys than expected (check Raw Events tab)</li>
-                </ul>
-              </div>
-            )}
-          </div>
-        );
-      case 'purchases':
-        return summaryData ? (
-          <div className="space-y-4">
-            {summaryData.variants.map((variant) => (
-              <Card key={variant.variantId} className="p-4">
-                <CardTitle className="text-lg mb-2">{variant.variantId}</CardTitle>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <div className="text-slate-500">Revenue</div>
-                    <div className="font-semibold">${variant.revenue.totalRevenue.toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500">Purchases</div>
-                    <div className="font-semibold">{variant.revenue.purchases}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500">Purchase Rate</div>
-                    <div className="font-semibold">{(variant.revenue.purchaseRate * 100).toFixed(2)}%</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500">Avg Order Value</div>
-                    <div className="font-semibold">${variant.revenue.avgOrderValue.toFixed(2)}</div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : <div>No purchase data available</div>;
-      case 'traffic':
-        return summaryData ? (
-          <div className="space-y-4">
-            {summaryData.variants.map((variant) => (
-              <Card key={variant.variantId} className="p-4">
-                <CardTitle className="text-lg mb-2">{variant.variantId}</CardTitle>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="text-slate-500">Sessions</div>
-                    <div className="font-semibold">{variant.sessions.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500">Exposures</div>
-                    <div className="font-semibold">{variant.exposures.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-500">Pageviews</div>
-                    <div className="font-semibold">{variant.pageviews.toLocaleString()}</div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : <div>No traffic data available</div>;
       case 'journey':
         if (!selectedExperimentId) {
           return (
@@ -488,8 +499,8 @@ export default function AnalyticsPage() {
             </div>
           );
         }
-        return <UserJourney
-          data={journeyData}
+        return <UserJourney 
+          data={journeyData} 
           sessions={sessions}
           selectedSessionId={selectedSessionId}
           sessionDetails={sessionDetails}
