@@ -116,74 +116,14 @@ export interface RawEventsResponse {
   offset: number;
 }
 
-// Legacy compatibility types (for existing components)
-export interface ConversionRate {
-  experimentId: string;
-  variantId: string;
-  sessions: number;
-  conversions: number;
-  conversionRate: number;
-  averageValue: number;
-  totalValue: number;
-}
-
-export interface ExposureStats {
-  experimentId: string;
-  variantId: string;
-  exposures: number;
-  uniqueSessions: number;
-}
-
-export interface PurchaseStats {
-  experimentId: string;
-  variantId: string;
-  sessions: number;
-  purchases: number;
-  purchaseRate: number;
-  totalRevenue: number;
-  averageOrderValue: number;
-  revenuePerSession: number;
-}
-
-export interface FunnelStep {
-  step: string;
-  eventType: 'EXPOSURE' | 'PAGEVIEW' | 'CONVERSION' | 'PURCHASE';
-  count: number;
-  percentage: number;
-  dropoffRate: number;
-}
-
-export interface FunnelVariant {
-  variantId: string;
-  steps: FunnelStep[];
-  totalSessions: number;
-  conversionRate: number;
-}
-
-export interface OverallStats {
-  totalSessions: number;
-  totalExposures: number;
-  totalConversions: number;
-  overallConversionRate: number;
-}
-
-export interface NewFunnelAnalysis {
-  experimentId: string;
-  variants: FunnelVariant[];
-  overallStats: OverallStats;
-}
-
-export interface GoalsBreakdownResponse {
-  experimentId: string;
-  variants: string[];
-  goals: Array<{
-    name: string;
-    type: string;
-    perVariant: Array<{
-      variantId: string;
-      conversions: number;
-    }>;
-  }>;
+export interface Experiment {
+  id: string;
+  name: string;
+  status: 'draft' | 'running' | 'paused' | 'completed';
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  projectId: string;
 }
 
 class AnalyticsApiError extends Error {
@@ -335,5 +275,13 @@ export const analyticsApi = {
     }
 
     return response.json();
+  },
+
+  /**
+   * Get all experiments for a project
+   */
+  async getExperiments(projectId: string): Promise<Experiment[]> {
+    const endpoint = `/api/experiments`;
+    return apiRequest<Experiment[]>(endpoint);
   },
 };
