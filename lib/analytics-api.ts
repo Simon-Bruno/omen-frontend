@@ -241,11 +241,13 @@ export const analyticsApi = {
    */
   async getRawEvents(options?: {
     experimentId?: string;
+    sessionId?: string;
     limit?: number;
     offset?: number;
   }): Promise<RawEventsResponse> {
     const params = new URLSearchParams();
     if (options?.experimentId) params.append('experimentId', options.experimentId);
+    if (options?.sessionId) params.append('sessionId', options.sessionId);
     if (options?.limit) params.append('limit', options.limit.toString());
     if (options?.offset) params.append('offset', options.offset.toString());
 

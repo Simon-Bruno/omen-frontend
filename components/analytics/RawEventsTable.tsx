@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { analyticsApi, AnalyticsEvent, EventCountsResponse } from '@/lib/analytics-api';
+import { analyticsApi, AnalyticsEvent, RawEventsResponse } from '@/lib/analytics-api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,6 @@ interface RawEventsTableProps {
 
 export function RawEventsTable({ experimentId, sessionId }: RawEventsTableProps) {
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
-  const [eventCounts, setEventCounts] = useState<EventCountsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limit, setLimit] = useState(100);
@@ -31,45 +30,15 @@ export function RawEventsTable({ experimentId, sessionId }: RawEventsTableProps)
     setError(null);
 
     try {
-      // Try the raw-events endpoint first (better backend implementation)
-      try {
-        const rawEventsResponse = await analyticsApi.getRawEvents({
-          experimentId,
-          sessionId,
-          limit,
-          offset
-        });
+      const rawEventsResponse = await analyticsApi.getRawEvents({
+        experimentId,
+        sessionId,
+        limit,
+        offset
+      });
 
-        setEvents(rawEventsResponse.events);
-        setTotalCount(rawEventsResponse.total);
-
-        // Also load event counts if we have an experiment
-        if (experimentId) {
-          const countsData = await analyticsApi.getEventCounts(experimentId);
-          setEventCounts(countsData);
-        }
-      } catch (rawEventsError) {
-        // Fall back to regular events endpoint if raw-events doesn't exist
-        console.log('Raw events endpoint not available, falling back to regular events');
-
-        const [eventsData, countData, countsData] = await Promise.all([
-          analyticsApi.getEvents({
-            experimentId,
-            sessionId,
-            limit,
-            offset
-          }),
-          analyticsApi.getEventsCount({
-            experimentId,
-            sessionId
-          }),
-          experimentId ? analyticsApi.getEventCounts(experimentId) : Promise.resolve(null)
-        ]);
-
-        setEvents(eventsData);
-        setTotalCount(countData.count);
-        setEventCounts(countsData);
-      }
+      setEvents(rawEventsResponse.events);
+      setTotalCount(rawEventsResponse.total);
     } catch (err) {
       console.error('Failed to load events:', err);
       setError(err instanceof Error ? err.message : 'Failed to load events');
@@ -116,32 +85,6 @@ export function RawEventsTable({ experimentId, sessionId }: RawEventsTableProps)
 
   return (
     <div className="space-y-6">
-      {/* Event Counts Summary */}
-      {eventCounts && eventCounts.experiments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Event Counts Summary</span>
-              <Badge variant="outline" className="font-normal">
-                Total: {eventCounts.experiments[0].totalEvents.toLocaleString()} events
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {eventCounts.experiments[0].events.map(evt => (
-                <div key={evt.eventType} className="text-center">
-                  <div className="text-2xl font-semibold">{evt.eventCount.toLocaleString()}</div>
-                  <Badge className={`mt-1 ${getEventTypeBadge(evt.eventType)}`}>
-                    {evt.eventType}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Raw Events Table */}
       <Card>
         <CardHeader>
