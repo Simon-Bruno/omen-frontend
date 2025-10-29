@@ -376,7 +376,7 @@ export default function AnalyticsPage() {
     setError(null);
 
     try {
-      const result = await analyticsApi.resetExperimentEvents(project.id, selectedExperimentId);
+      const result = await analyticsApi.resetExperimentEvents(selectedExperimentId);
 
       if (result.success) {
         // Reload data after successful reset
