@@ -263,13 +263,15 @@ export default function AnalyticsPage() {
       return sum + (primaryGoal?.conversions || 0);
     }, 0);
     
-    const bestVariant = summaryData.variants.reduce((best, current) => {
-      const bestPrimaryGoal = best.goals.find(g => g.role === 'primary') || best.goals[0];
-      const currentPrimaryGoal = current.goals.find(g => g.role === 'primary') || current.goals[0];
-      const bestRate = bestPrimaryGoal?.conversionRate || 0;
-      const currentRate = currentPrimaryGoal?.conversionRate || 0;
-      return currentRate > bestRate ? current : best;
-    });
+    const bestVariant = summaryData.variants.length > 0
+      ? summaryData.variants.reduce((best, current) => {
+          const bestPrimaryGoal = best.goals.find(g => g.role === 'primary') || best.goals[0];
+          const currentPrimaryGoal = current.goals.find(g => g.role === 'primary') || current.goals[0];
+          const bestRate = bestPrimaryGoal?.conversionRate || 0;
+          const currentRate = currentPrimaryGoal?.conversionRate || 0;
+          return currentRate > bestRate ? current : best;
+        })
+      : null;
 
     const primaryGoalName = summaryData.variants[0]?.goals.find(g => g.role === 'primary')?.name || 
                              summaryData.variants[0]?.goals[0]?.name || 'conversions';
@@ -324,10 +326,10 @@ export default function AnalyticsPage() {
               <h3 className="text-sm font-semibold text-slate-700 mb-1">Best Performer</h3>
            </div>
             <div className="text-3xl font-bold text-slate-900 mb-2">
-              {bestVariant.variantId}
+              {bestVariant?.variantId || 'N/A'}
           </div>
             <div className="text-sm text-slate-500">
-              {(() => {
+              {bestVariant ? (() => {
                 const primaryGoal = bestVariant.goals.find(g => g.role === 'primary') || bestVariant.goals[0];
                 if (!primaryGoal || !bestVariant.sessions || bestVariant.sessions === 0) return '0.00% conversion';
                 
@@ -337,7 +339,7 @@ export default function AnalyticsPage() {
                 const rate = (conversions / sessions) * 100;
                 
                 return rate.toFixed(2) + '% conversion';
-              })()}
+              })() : 'No variants available'}
             </div>
           </Card>
         </div>
